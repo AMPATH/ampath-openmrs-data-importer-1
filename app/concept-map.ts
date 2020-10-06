@@ -31,6 +31,14 @@ export default class ConceptMapper {
       }
       map[o] = concepts.grouped[o][0];
     }
+
+    for (let o in conceptsToReplace.grouped) {
+      if (!map[o]) {
+        console.log("replacing concepts", conceptsToReplace.grouped[o][0]);
+        map[o] = conceptsToReplace.grouped[o][0];
+      }
+    }
+
     this._conceptMap = map;
     // console.log('Mapped Concepts', map);
   }
