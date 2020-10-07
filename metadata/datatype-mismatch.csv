@@ -22,6 +22,7 @@ concept_id,code,source,datatype,amrs_id,amrs_datatype
 1434,1434,CIEL,Boolean,1484,N/A
 1494,1494,CIEL,Boolean,6173,N/A
 1652,1652,CIEL,Boolean,6467,N/A
+1713,1713,CIEL,Boolean,6214,N/A
 1714,1714,CIEL,Boolean,6215,N/A
 1855,1855,CIEL,Boolean,9070,Coded
 1859,1859,CIEL,Coded,8550,N/A
@@ -36,7 +37,6 @@ concept_id,code,source,datatype,amrs_id,amrs_datatype
 5576,2198,AMPATH,Boolean,2198,Coded
 5599,5599,AMPATH,Datetime,5599,Date
 6004,6004,AMPATH,Coded,6004,N/A
-6032,6032,AMPATH,Coded,6032,N/A
 6046,6046,AMPATH,Coded,6046,N/A
 112141,112141,CIEL,Coded,58,N/A
 119481,119481,CIEL,Coded,175,N/A
@@ -45,6 +45,7 @@ concept_id,code,source,datatype,amrs_id,amrs_datatype
 127750,127750,CIEL,Boolean,1958,N/A
 132652,132652,CIEL,N/A,1480,Coded
 133027,133027,CIEL,Boolean,6029,N/A
+140485,140485,CIEL,Coded,11558,N/A
 140501,140501,CIEL,Boolean,5949,N/A
 142177,142177,CIEL,Boolean,6971,N/A
 142412,142412,CIEL,Coded,16,N/A
