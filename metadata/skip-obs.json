@@ -7,5 +7,14 @@
   },
   "1082734": {
     "reason": "Only one obs found. CCC identifier stored as obs. "
+  },
+  "647139": {
+    "reason": "Free text vs coded clash. only 3 obs affected. "
+  },
+  "649719": {
+    "reason": "Free text vs coded clash. only 3 obs affected. "
+  },
+  "649894": {
+    "reason": "Free text vs coded clash. only 3 obs affected. "
   }
 }
