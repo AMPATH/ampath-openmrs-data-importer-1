@@ -88,7 +88,7 @@ export function toOrdersInsertStatement(
     creator: userMap[sourceOrder.creator],
     voided_by: userMap[sourceOrder.voided_by],
     orderer: providerMap[sourceOrder.orderer],
-    order_reason: providerMap[sourceOrder.orderer],
+    // order_reason: conceptMap[sourceOrder.order_reason],
     patient_id: newPatientId,
     encounter_id: encounterMap[sourceOrder.encounter_id] || null,
     previous_order_id: null, //TODO replace with previous_version
@@ -105,14 +105,14 @@ export function prepareOrders(
   let orders: Order[] = ordersToInsert.map<Order>(
     (o, i, A): Order => {
       let newOrder: Order = Object.assign({}, o);
-      try {
-        // TODO, to remove this before moving running in production
-        assertOrderConceptsAreMapped(o, conceptMap.conceptMap);
-        mapOrderConcept(newOrder, o, conceptMap.conceptMap);
-        mapOrderReasonConcept(newOrder, o, conceptMap.conceptMap);
-      } catch (err) {
-        newOrder.comment_to_fulfiller = "invalid";
-      }
+      // try {
+      // TODO, to remove this before moving running in production
+      assertOrderConceptsAreMapped(o, conceptMap.conceptMap);
+      mapOrderConcept(newOrder, o, conceptMap.conceptMap);
+      mapOrderReasonConcept(newOrder, o, conceptMap.conceptMap);
+      // } catch (err) {
+      //   newOrder.comment_to_fulfiller = "invalid";
+      // }
       return newOrder;
     }
   );
@@ -150,5 +150,9 @@ export function mapOrderReasonConcept(
   sourceOrder: Order,
   conceptMap: ConceptMap
 ) {
-  newOrder.concept_id = parseInt(conceptMap[sourceOrder.concept_id].amrs_id);
+  if (sourceOrder.order_reason) {
+    newOrder.order_reason = parseInt(
+      conceptMap[sourceOrder.order_reason].amrs_id
+    );
+  }
 }

@@ -61,8 +61,12 @@ export default async function transferPatientToAmrs(personId: number) {
     // console.log('saved patient', saved, insertMap);
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     await CM.rollbackTransaction(amrsCon);
+    await CM.releaseConnections(amrsCon, kenyaEmrCon);
+    return { synced: true, message: null };
   } catch (er) {
-    console.error("Error saving patient:", er);
+    console.error("Error saving patient: " + patient.person.person_id, er);
     await CM.rollbackTransaction(amrsCon);
+    await CM.releaseConnections(amrsCon, kenyaEmrCon);
+    return { synced: false, message: er.message };
   }
 }
