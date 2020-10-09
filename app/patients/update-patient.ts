@@ -15,13 +15,17 @@ import { saveProgramEnrolments } from "./save-program-enrolment";
 import { savePatientIdentifiers } from "./save-identifiers";
 import { savePersonAttributes } from "./save-person-attribute";
 import { comparePatients } from "./compare-patients";
+import { comparePatientIdentifiers } from "./save-identifiers";
+
 const CM = ConnectionManager.getInstance();
 
-export default async function updatePatientInAmrs(kenyaemrPersonId: number, amrsPersonUuid: string) {
+export default async function updatePatientInAmrs(
+  kenyaemrPersonId: number,
+  amrsPersonUuid: string
+) {
   const kenyaEmrCon = await CM.getConnectionKenyaemr();
   const kenyaEmrPatient = await loadPatientData(kenyaemrPersonId, kenyaEmrCon);
   await CM.commitTransaction(kenyaEmrCon);
-
 
   let amrsCon = await CM.getConnectionAmrs();
   amrsCon = await CM.startTransaction(amrsCon);
@@ -30,24 +34,29 @@ export default async function updatePatientInAmrs(kenyaemrPersonId: number, amrs
     const amrsPatient = await loadPatientDataByUuid(amrsPersonUuid, amrsCon);
     console.log("patient", amrsPatient.obs.length);
     let insertMap: InsertedMap = {
-        patient: amrsPatient.person.person_id,
-        visits: {},
-        encounters: {},
-        patientPrograms: {},
-        patientIdentifier: {},
-        obs: {},
-        orders: {},
+      patient: amrsPatient.person.person_id,
+      visits: {},
+      encounters: {},
+      patientPrograms: {},
+      patientIdentifier: {},
+      obs: {},
+      orders: {},
     };
     const difference = comparePatients(kenyaEmrPatient, amrsPatient, insertMap);
-    console.log('difference',difference.newRecords.obs.length);
+    console.log("difference", difference.newRecords.obs.length);
+    const identifiersToSave = comparePatientIdentifiers(
+      kenyaEmrPatient.identifiers,
+      amrsPatient.identifiers
+    );
+    // console.log("identifiersTosave", identifiersToSave);
     // await savePersonAddress(kenyaEmrPatient, insertMap, amrsCon);
     // await savePersonName(kenyaEmrPatient, insertMap, amrsCon);
-    // await savePatientIdentifiers(
-    //   kenyaEmrPatient.identifiers,
-    //   kenyaEmrPatient,
-    //   insertMap,
-    //   amrsCon
-    // );
+    await savePatientIdentifiers(
+      identifiersToSave,
+      kenyaEmrPatient,
+      insertMap,
+      amrsCon
+    );
     // await savePersonAttributes(difference.newRecords, insertMap, amrsCon);
     await saveProgramEnrolments(
       difference.newRecords.patientPrograms,
@@ -56,12 +65,35 @@ export default async function updatePatientInAmrs(kenyaemrPersonId: number, amrs
       amrsCon
     );
     await saveVisitData(difference.newRecords, insertMap, kenyaEmrCon, amrsCon);
-    await saveEncounterData(difference.newRecords.encounter, insertMap, amrsCon, kenyaEmrCon);
-    await savePatientOrders(difference.newRecords.orders, kenyaEmrPatient, insertMap, amrsCon);
-    await savePatientObs(difference.newRecords.obs, kenyaEmrPatient, insertMap, amrsCon);
-    await saveProviderData(difference.newRecords.provider, insertMap, kenyaEmrCon, amrsCon);
-    const saved = await loadPatientDataByUuid(kenyaEmrPatient.person.uuid, amrsCon);
-    console.log('saved patient', saved, insertMap);
+    await saveEncounterData(
+      difference.newRecords.encounter,
+      insertMap,
+      amrsCon,
+      kenyaEmrCon
+    );
+    await savePatientOrders(
+      difference.newRecords.orders,
+      kenyaEmrPatient,
+      insertMap,
+      amrsCon
+    );
+    await savePatientObs(
+      difference.newRecords.obs,
+      kenyaEmrPatient,
+      insertMap,
+      amrsCon
+    );
+    await saveProviderData(
+      difference.newRecords.provider,
+      insertMap,
+      kenyaEmrCon,
+      amrsCon
+    );
+    const saved = await loadPatientDataByUuid(
+      kenyaEmrPatient.person.uuid,
+      amrsCon
+    );
+    console.log("saved patient", saved, insertMap);
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     // await CM.commitTransaction(amrsCon);
     await CM.rollbackTransaction(amrsCon);
