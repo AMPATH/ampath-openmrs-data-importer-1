@@ -158,20 +158,20 @@ export function prepareObs(
       return filtered;
     }
     let newObs: Obs = Object.assign({}, o);
-    try {
-      // TODO, to remove this before moving running in production
-      assertObsConceptsAreMapped(o, conceptMap.conceptMap);
-      if (dataTypeMapping[o.concept_id]) {
-        // a map is provided to handle concept and type transformations
-        transformObsConcept(dataTypeMapping[o.concept_id], newObs, o);
-      } else {
-        mapObsConcept(newObs, o, conceptMap.conceptMap);
-        mapObsValue(newObs, o, conceptMap.conceptMap);
-      }
-    } catch (err) {
-      // console.warn('Error:', err);
-      newObs.comments = "invalid";
+    // try {
+    // TODO, to remove this before moving running in production
+    assertObsConceptsAreMapped(o, conceptMap.conceptMap);
+    if (dataTypeMapping[o.concept_id]) {
+      // a map is provided to handle concept and type transformations
+      transformObsConcept(dataTypeMapping[o.concept_id], newObs, o);
+    } else {
+      mapObsConcept(newObs, o, conceptMap.conceptMap);
+      mapObsValue(newObs, o, conceptMap.conceptMap);
     }
+    // } catch (err) {
+    //   // console.warn('Error:', err);
+    //   newObs.comments = "invalid";
+    // }
     filtered.push(newObs);
     return filtered;
   }, []);
@@ -190,7 +190,7 @@ export function assertObsConceptsAreMapped(obs: Obs, conceptMap: ConceptMap) {
 
   if (obs.value_coded && !conceptMap[obs.value_coded]) {
     throw new Error(
-      "Unmapped concept detected. Concept ID: " + obs.value_coded
+      "Unmapped value_coded concept detected. Concept ID: " + obs.value_coded
     );
   }
 }
@@ -222,7 +222,10 @@ export function mapObsValue(
     mapMatchingTypeObsValue(newObs, sourceObs, conceptMap);
   } else {
     throw new Error(
-      "Unresolved conflicting data types detected. Details: " + foundConcept
+      "Unresolved conflicting data types detected. Details: " +
+        foundConcept.concept_id +
+        " " +
+        foundConcept.amrs_id
     );
   }
 }
