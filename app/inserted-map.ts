@@ -15,6 +15,9 @@ export type InsertedMap = {
   patientIdentifier: {
     [kenyaEmrId: number]: number;
   };
+  personAddress?: {
+    [kenyaEmrId: number]: number;
+  };
   obs: ObsMap;
   orders: OrderMap;
 };

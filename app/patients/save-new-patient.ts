@@ -3,7 +3,7 @@ import { Person, Patient, Address, PersonName } from "../tables.types";
 import { PatientData } from "./patient-data";
 import ConnectionManager from "../connection-manager";
 import UserMapper from "../users/user-map";
-import toInsertSql from "../prepare-insert-sql";
+import toInsertSql, { toUpdateSql } from "../prepare-insert-sql";
 import { InsertedMap } from "../inserted-map";
 
 const CM = ConnectionManager.getInstance();
@@ -69,7 +69,8 @@ export function toPatientInsertStatement(
 export async function savePersonAddress(
   patient: PatientData,
   insertMap: InsertedMap,
-  connection: Connection
+  connection: Connection,
+  updateStatement = false
 ) {
   let replaceColumns = {};
   const userMap = UserMapper.instance.userMap;
@@ -84,11 +85,29 @@ export async function savePersonAddress(
       address8: patient.address.address6, //Location,
       address9: patient.address.address5, //Sub Location,
     };
-
-    await CM.query(
-      toPersonAddressInsertStatement(patient.address, replaceColumns),
-      connection
-    );
+    if (!updateStatement) {
+      await CM.query(
+        toPersonAddressInsertStatement(patient.address, replaceColumns),
+        connection
+      );
+    } else if (
+      insertMap.personAddress &&
+      insertMap.personAddress[patient.address.person_address_id]
+    ) {
+      replaceColumns = {
+        ...replaceColumns,
+        person_address_id:
+          insertMap.personAddress[patient.address.person_address_id],
+      };
+      await CM.query(
+        toPersonAddressUpdateStatement(patient.address, replaceColumns),
+        connection
+      );
+    } else {
+      throw new Error(
+        "Updating address failed. person_address_id missing from the insert map."
+      );
+    }
   }
 }
 
@@ -103,6 +122,20 @@ export function toPersonAddressInsertStatement(
     replaceColumns
   );
 }
+
+export function toPersonAddressUpdateStatement(
+  personAddress: Address,
+  replaceColumns?: any
+) {
+  return toUpdateSql(
+    personAddress,
+    ["person_address_id"],
+    "person_address",
+    "person_address_id",
+    replaceColumns
+  );
+}
+
 export async function savePersonName(
   patient: PatientData,
   insertMap: InsertedMap,
