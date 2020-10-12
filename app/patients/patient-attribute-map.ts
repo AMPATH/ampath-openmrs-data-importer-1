@@ -47,11 +47,11 @@ export default class PatientAttributeTypeMapper {
     console.log("Patient Attribute Type Map", this._patientAttributeTypeMap);
   }
 
-  get encounterTypeMap(): PatientAttributeTypeMap {
+  get patientAttributeTypeMap(): PatientAttributeTypeMap {
     return this._patientAttributeTypeMap || {};
   }
 
-  get encounterTypeArray(): any {
+  get patientAttributeArray(): any {
     return this._patientAttributeTypeArray;
   }
 }

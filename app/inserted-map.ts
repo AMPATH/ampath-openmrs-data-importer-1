@@ -18,6 +18,9 @@ export type InsertedMap = {
   personAddress?: {
     [kenyaEmrId: number]: number;
   };
+  personAttributes?: {
+    [kenyaEmrId: number]: number;
+  };
   obs: ObsMap;
   orders: OrderMap;
 };
