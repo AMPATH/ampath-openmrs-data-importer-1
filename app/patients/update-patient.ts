@@ -32,7 +32,7 @@ export default async function updatePatientInAmrs(
 
   try {
     const amrsPatient = await loadPatientDataByUuid(amrsPersonUuid, amrsCon);
-    console.log("patient", amrsPatient.obs.length);
+    // console.log("patient", amrsPatient.obs.length);
     let insertMap: InsertedMap = {
       patient: amrsPatient.person.person_id,
       visits: {},
@@ -49,8 +49,7 @@ export default async function updatePatientInAmrs(
       amrsPatient.identifiers
     );
     // console.log("identifiersTosave", identifiersToSave);
-    // await savePersonAddress(kenyaEmrPatient, insertMap, amrsCon);
-    // await savePersonName(kenyaEmrPatient, insertMap, amrsCon);
+    await savePersonAddress(difference.newRecords, insertMap, amrsCon, true);
     await savePatientIdentifiers(
       identifiersToSave,
       kenyaEmrPatient,
@@ -89,11 +88,8 @@ export default async function updatePatientInAmrs(
       kenyaEmrCon,
       amrsCon
     );
-    const saved = await loadPatientDataByUuid(
-      kenyaEmrPatient.person.uuid,
-      amrsCon
-    );
-    console.log("saved patient", saved, insertMap);
+    const saved = await loadPatientDataByUuid(amrsPatient.person.uuid, amrsCon);
+    console.log("saved patient", saved.address, insertMap.personAddress);
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     // await CM.commitTransaction(amrsCon);
     await CM.rollbackTransaction(amrsCon);
