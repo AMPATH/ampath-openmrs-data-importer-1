@@ -1,7 +1,7 @@
 import { Connection } from "mysql";
 import ConnectionManager from "../connection-manager";
 import { InsertedMap } from "../inserted-map";
-import toInsertSql from "../prepare-insert-sql";
+import toInsertSql, { toUpdateSql } from "../prepare-insert-sql";
 import { PersonAttribute } from "../tables.types";
 import UserMapper from "../users/user-map";
 import PatientAttributeTypeMapper from "./patient-attribute-map";
@@ -15,7 +15,8 @@ export async function savePersonAttributes(
 ) {
   // console.log("user person id", personId);
   const userMap = UserMapper.instance.userMap;
-  const attributeTypeMap = PatientAttributeTypeMapper.instance.encounterTypeMap;
+  const attributeTypeMap =
+    PatientAttributeTypeMapper.instance.patientAttributeTypeMap;
   for (const attribute of patient.attributes) {
     let replaceColumns = {};
     if (userMap) {
@@ -29,10 +30,26 @@ export async function savePersonAttributes(
           attributeTypeMap[attribute.person_attribute_type_id],
       };
     }
-    await CM.query(
-      toPatientAttributeInsertStatement(attribute, replaceColumns),
-      AmrsConnection
-    );
+    if (
+      insertMap.personAttributes &&
+      insertMap.personAttributes[attribute.person_attribute_id]
+    ) {
+      replaceColumns = {
+        ...replaceColumns,
+        person_attribute_id:
+          insertMap.personAttributes[attribute.person_attribute_id] ||
+          attribute.person_attribute_id,
+      };
+      await CM.query(
+        toPatientAttributeUpdateStatement(attribute, replaceColumns),
+        AmrsConnection
+      );
+    } else {
+      await CM.query(
+        toPatientAttributeInsertStatement(attribute, replaceColumns),
+        AmrsConnection
+      );
+    }
   }
 }
 
@@ -44,6 +61,19 @@ export function toPatientAttributeInsertStatement(
     attribute,
     ["person_attribute_id"],
     "person_attribute",
+    replaceColumns
+  );
+}
+
+export function toPatientAttributeUpdateStatement(
+  attribute: PersonAttribute,
+  replaceColumns?: any
+) {
+  return toUpdateSql(
+    attribute,
+    ["person_attribute_id"],
+    "person_attribute",
+    "person_attribute_id",
     replaceColumns
   );
 }

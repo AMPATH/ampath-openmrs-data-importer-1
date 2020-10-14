@@ -42,7 +42,11 @@ export default async function updatePatientInAmrs(
       obs: {},
       orders: {},
     };
-    const difference = comparePatients(kenyaEmrPatient, amrsPatient, insertMap);
+    const difference = await comparePatients(
+      kenyaEmrPatient,
+      amrsPatient,
+      insertMap
+    );
     console.log("difference", difference.newRecords.obs.length);
     const identifiersToSave = comparePatientIdentifiers(
       kenyaEmrPatient.identifiers,
@@ -56,13 +60,7 @@ export default async function updatePatientInAmrs(
       insertMap,
       amrsCon
     );
-    // await savePersonAttributes(difference.newRecords, insertMap, amrsCon);
-    await saveProgramEnrolments(
-      difference.newRecords.patientPrograms,
-      kenyaEmrPatient,
-      insertMap,
-      amrsCon
-    );
+    await savePersonAttributes(difference.newRecords, insertMap, amrsCon);
     await saveVisitData(difference.newRecords, insertMap, kenyaEmrCon, amrsCon);
     await saveEncounterData(
       difference.newRecords.encounter,
@@ -82,14 +80,9 @@ export default async function updatePatientInAmrs(
       insertMap,
       amrsCon
     );
-    await saveProviderData(
-      difference.newRecords.provider,
-      insertMap,
-      kenyaEmrCon,
-      amrsCon
-    );
+
     const saved = await loadPatientDataByUuid(amrsPatient.person.uuid, amrsCon);
-    console.log("saved patient", saved.address, insertMap.personAddress);
+    console.log("saved patient", saved.attributes, insertMap.personAttributes);
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     // await CM.commitTransaction(amrsCon);
     await CM.rollbackTransaction(amrsCon);

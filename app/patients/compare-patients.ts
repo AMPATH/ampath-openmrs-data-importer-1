@@ -1,5 +1,6 @@
 import moment from "moment";
 import { InsertedMap } from "../inserted-map";
+import PatientAttributeTypeMapper from "./patient-attribute-map";
 import { PatientData } from "./patient-data";
 
 export type PatientDifference = {
@@ -7,11 +8,15 @@ export type PatientDifference = {
   newRecords: PatientData;
 };
 
-export function comparePatients(
+export async function comparePatients(
   source: PatientData,
   destination: PatientData,
   insertMap: InsertedMap
 ) {
+  await PatientAttributeTypeMapper.instance.initialize();
+  const attributeTypeMap =
+    PatientAttributeTypeMapper.instance.patientAttributeTypeMap;
+
   console.log("comparing patients");
   const difference: PatientDifference = {
     wasTransferredFromKenyaEmr: false,
@@ -20,7 +25,7 @@ export function comparePatients(
       patient: source.patient,
       address: source.address,
       names: [],
-      attributes: source.attributes,
+      attributes: [],
       identifiers: [],
       patientPrograms: [],
       obs: [],
@@ -89,28 +94,35 @@ export function comparePatients(
     }
   }
 
-  console.log("comparing programs");
-  for (let v of source.patientPrograms) {
-    const foundProgram = destination.patientPrograms.find(
-      (d) => d.uuid === v.uuid
+  console.log("comparing attributes");
+  for (let v of source.attributes) {
+    if (v.voided === 1) continue;
+    const destAttrbType =
+      attributeTypeMap[v.person_attribute_type_id] ||
+      v.person_attribute_type_id;
+    const foundAttributes = destination.attributes.find(
+      (d) => d.person_attribute_type_id === destAttrbType && d.voided !== 1
     );
-    if (!foundProgram) {
-      difference.newRecords.patientPrograms.push(v);
+    if (!foundAttributes) {
+      difference.newRecords.attributes.push(v);
     } else {
-      insertMap.patientPrograms[v.program_id] = foundProgram.program_id;
+      if (!insertMap.personAttributes) {
+        insertMap.personAttributes = {};
+      }
+      insertMap.personAttributes[v.person_attribute_id] =
+        foundAttributes.person_attribute_id;
+      if (isMoreRecent(v, foundAttributes)) {
+        difference.newRecords.attributes.push(v);
+      }
     }
   }
 
-  console.log("comparing attributes");
-  // for(let v of source.attributes) {
-  //     const foundAttributes = destination.attributes.find((d)=> d.uuid === v.uuid);
-  //     if(!foundAttributes) {
-  //         difference.newRecords.attributes.push(v);
-  //     } else {
-  //         // insertMap.[v.person_attribute_id] = foundProgram.program_id;
-  //     }
-  // }
-  console.log("done comparing");
+  console.log(
+    "done comparing",
+    source.attributes,
+    difference.newRecords.attributes,
+    insertMap.personAttributes
+  );
   return difference;
 }
 
