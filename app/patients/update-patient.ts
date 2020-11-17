@@ -85,6 +85,7 @@ export default async function updatePatientInAmrs(
     );
     await saveProviderData(
       difference.newRecords.provider,
+      amrsPatient,
       insertMap,
       kenyaEmrCon,
       amrsCon

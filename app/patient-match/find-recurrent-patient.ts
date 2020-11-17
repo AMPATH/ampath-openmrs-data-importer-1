@@ -19,7 +19,7 @@ init();
 
 async function init() {
   const startTime = startTimer();
-  const data = await checkForPossiblePatientMatch(2);
+  const data = await checkForPossiblePatientMatch(6000);
   console.log(
     "Number of possible already existing patients: ",
     data[0]?.length
