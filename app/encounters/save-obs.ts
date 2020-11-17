@@ -124,7 +124,7 @@ export function toObsInsertStatement(
     voided_by: userMap[sourceObs.voided_by],
     person_id: newPatientId,
     encounter_id: encounterMap[sourceObs.encounter_id] || null,
-    location_id: 1, //TODO replace with kapenguria location id,
+    location_id: 214, //TODO replace with kapenguria location id,
     order_id: orderMap[sourceObs.order_id] || null,
     status: "FINAL",
     obs_group_id: null,

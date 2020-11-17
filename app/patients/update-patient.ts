@@ -80,9 +80,19 @@ export default async function updatePatientInAmrs(
       insertMap,
       amrsCon
     );
+    await saveProviderData(
+      difference.newRecords.provider,
+      amrsPatient,
+      insertMap,
+      kenyaEmrCon,
+      amrsCon
+    );
+    const saved = await loadPatientDataByUuid(
+      kenyaEmrPatient.person.uuid,
+      amrsCon
+    );
+    console.log("saved patient", saved, insertMap);
 
-    const saved = await loadPatientDataByUuid(amrsPatient.person.uuid, amrsCon);
-    console.log("saved patient", saved.attributes, insertMap.personAttributes);
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     // await CM.commitTransaction(amrsCon);
     await CM.rollbackTransaction(amrsCon);
