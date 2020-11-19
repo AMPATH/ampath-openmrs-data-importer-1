@@ -1,9 +1,5 @@
 import ConnectionManager from "../connection-manager";
-import savePatientData, {
-  savePatient,
-  savePersonAddress,
-  savePersonName,
-} from "./save-new-patient";
+import { savePersonAddress } from "./save-new-patient";
 import loadPatientData, { loadPatientDataByUuid } from "./load-patient-data";
 import saveVisitData from "../visits/save-visit-data";
 import { InsertedMap } from "../inserted-map";
@@ -11,7 +7,6 @@ import savePatientObs from "../encounters/save-obs";
 import saveProviderData from "../providers/save-provider-data";
 import saveEncounterData from "../encounters/save-encounters";
 import savePatientOrders from "../encounters/save-orders";
-import { saveProgramEnrolments } from "./save-program-enrolment";
 import { savePatientIdentifiers } from "./save-identifiers";
 import { savePersonAttributes } from "./save-person-attribute";
 import { comparePatients } from "./compare-patients";
@@ -96,8 +91,10 @@ export default async function updatePatientInAmrs(
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     // await CM.commitTransaction(amrsCon);
     await CM.rollbackTransaction(amrsCon);
+    await CM.releaseConnections(amrsCon, kenyaEmrCon);
   } catch (er) {
     console.error("Error saving patient:", er);
     await CM.rollbackTransaction(amrsCon);
+    await CM.releaseConnections(amrsCon, kenyaEmrCon);
   }
 }
