@@ -45,7 +45,7 @@ export async function comparePatients(
     insertMap.personAddress = {};
   }
   insertMap.personAddress[source.address.person_address_id] =
-    destination.address.person_address_id;
+    destination.address?.person_address_id;
   if (isMoreRecent(source.address, destination.address)) {
     difference.newRecords.address = source.address;
   } else {
@@ -142,18 +142,17 @@ export function isMoreRecent(source: any, destination: any): boolean {
     },
     {
       type: "destination",
-      date: destination.date_created,
+      date: destination?.date_created,
     },
     {
       type: "destination",
-      date: destination.date_changed,
+      date: destination?.date_changed,
     },
     {
       type: "destination",
-      date: destination.date_voided,
+      date: destination?.date_voided,
     },
   ];
-
   const sorted = dates
     .filter((d) => d.date !== null && d.date !== undefined)
     .sort((a, b) => (moment(a.date).isAfter(moment(b.date)) ? -1 : 1));

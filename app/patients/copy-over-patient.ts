@@ -24,16 +24,21 @@ export default async function transferPatientToAmrs(personId: number) {
   let amrsCon = await CM.getConnectionAmrs();
   amrsCon = await CM.startTransaction(amrsCon);
   try {
-    let saved;
+    let saved = { person: patient.person };
     let existingPerson = await loadPatientDataByUuid(
       patient.person.uuid,
       amrsCon
     );
-    if (existingPerson.person?.person_id) {
+    if (existingPerson.person?.person_id && !patient.patient) {
       saved = existingPerson;
-      console.log(patient);
-    } else {
+    } else if (patient.patient && !existingPerson.person?.person_id) {
       await savePatientData(patient, amrsCon);
+      saved = await loadPatientDataByUuid(patient.person.uuid, amrsCon);
+      await savePatient(patient, saved.person.person_id, amrsCon);
+    } else if (
+      existingPerson.person?.person_id &&
+      patient.patient?.patient_id
+    ) {
       saved = await loadPatientDataByUuid(patient.person.uuid, amrsCon);
       await savePatient(patient, saved.person.person_id, amrsCon);
     }

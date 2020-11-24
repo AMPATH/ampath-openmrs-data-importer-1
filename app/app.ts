@@ -5,36 +5,55 @@ import writeCsv from "./write-csv";
 
 const readCSV = require("./read-csv");
 const patientIdsPath = "metadata/patient_ids.csv";
+const existingPatientIdsPath = "metadata/possible-existing-patients-copy.csv";
 const pathtoError = "metadata/enc prov errors.csv";
 
 console.log("Starting application..");
 
-async function start() {
+async function start(action: string) {
+  console.log("ACtion", action);
   const patientIds = await readCSV(patientIdsPath);
   const patients = patientIds.array.map((p: any) => p.patient_id);
+  const existingPatientsIds = await readCSV(existingPatientIdsPath);
+  const existingPatients = existingPatientsIds.array.map(
+    (existing: any) => existing
+  );
   let synced = 0;
   let failed = 0;
   let encProvErrors = [];
-  for (const patient of patients) {
-    console.log("=======start===========");
-    let status = await transferPatientToAmrs(patient);
-    if (status.synced) {
-      synced++;
-    } else {
-      failed++;
-      let msg = status.message as string;
-      if (msg.includes("for key 'uuid'") && msg.includes("Duplicate entry")) {
-        let err = {
-          patientId: patient,
-          encProvUuid: msg.substr(31, 36),
-        };
-        encProvErrors.push(err);
+  if (action && action === "create") {
+    for (const patient of patients) {
+      console.log("=======start===========");
+      let status = await transferPatientToAmrs(patient);
+      if (status.synced) {
+        synced++;
       } else {
-        break;
+        failed++;
+        let msg = status.message as string;
+        if (msg.includes("for key 'uuid'") && msg.includes("Duplicate entry")) {
+          let err = {
+            patientId: patient,
+            encProvUuid: msg.substr(31, 36),
+          };
+          encProvErrors.push(err);
+        } else {
+          break;
+        }
       }
+      console.log("========end==========");
     }
-    console.log("========end==========");
+  } else {
+    for (const ePatient of existingPatients) {
+      console.log("=======start===========");
+      let status = await updatePatientInAmrs(
+        ePatient["KenyaEMR personID"],
+        ePatient["AMRS person uuid"]
+      );
+      console.log(status, ePatient["KenyaEMR personID"]);
+      console.log("========end==========");
+    }
   }
+
   let header = [
     {
       id: "patientId",
@@ -55,4 +74,4 @@ async function start() {
   // await transferPatientToAmrs(22);
 }
 
-start();
+start(process.argv[2]);

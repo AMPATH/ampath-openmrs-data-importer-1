@@ -85,7 +85,12 @@ export async function savePersonAddress(
       address8: patient.address.address6, //Location,
       address9: patient.address.address5, //Sub Location,
     };
-    if (!updateStatement) {
+    if (
+      !updateStatement ||
+      (insertMap.personAddress &&
+        insertMap.personAddress[patient.address.person_address_id] ===
+          undefined)
+    ) {
       await CM.query(
         toPersonAddressInsertStatement(patient.address, replaceColumns),
         connection
