@@ -17,7 +17,7 @@ export async function saveUser(user: UserData, connection: Connection) {
 }
 
 export function toUserInsertStatement(user: User) {
-  return toInsertSql(user, ["user_id"], "users");
+  return toInsertSql(user, ["user_id", "system_id"], "users");
 }
 
 export function toInsertSql(obj: any, excludeColumns: string[], table: string) {

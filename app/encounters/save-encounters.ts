@@ -67,7 +67,7 @@ export async function saveEncounter(
     insertMap.encounters[enc.encounter_id] = savedEncounter.insertId;
     await saveEncounterProviderData(
       enc,
-      savedEncounter.encounter_id,
+      savedEncounter.insertId,
       amrsConnection,
       userMap
     );
@@ -89,19 +89,26 @@ export async function saveEncounterProviderData(
   for (const enc_provider of EncounterProviders) {
     const providerId =
       ProviderMapper.instance.providerMap[enc_provider.provider_id];
+    console.log("Prpovides", enc_provider.provider_id);
     if (userMap) {
       replaceColumns = {
         creator: userMap[enc_provider.creator],
         changed_by: userMap[enc_provider.changed_by],
         voided_by: userMap[enc_provider.voided_by],
         encounter_id: encounterId,
-        provider_id: providerId,
+        provider_id: providerId + "-Migrated",
       };
     }
-    await CM.query(
-      toEncounterProviderInsertStatement(enc_provider, replaceColumns),
+    let encounterProviderExist = await fetchEncounterProviders(
+      enc_provider.encounter_id,
       connection
     );
+    if (encounterProviderExist.length === 0) {
+      await CM.query(
+        toEncounterProviderInsertStatement(enc_provider, replaceColumns),
+        connection
+      );
+    }
   }
 }
 export function toEncounterInsertStatement(
