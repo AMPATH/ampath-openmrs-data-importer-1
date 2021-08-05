@@ -17,30 +17,31 @@ import { savePersonAttributes } from "./save-person-attribute";
 const CM = ConnectionManager.getInstance();
 
 export default async function transferPatientToAmrs(personId: number) {
-  const kenyaEmrCon = await CM.getConnectionKenyaemr();
-  const patient = await loadPatientData(personId, kenyaEmrCon);
-  await CM.commitTransaction(kenyaEmrCon);
+  const amrsEmrCon = await CM.getConnectionAmrs();
+  const patient = await loadPatientData(personId, amrsEmrCon);
+  await CM.commitTransaction(amrsEmrCon);
   console.log("patient", patient.identifiers);
-  let amrsCon = await CM.getConnectionAmrs();
-  amrsCon = await CM.startTransaction(amrsCon);
+  let emrcon = await CM.getConnectionKenyaemr();
+  emrcon = await CM.startTransaction(emrcon);
   try {
     let saved = { person: patient.person };
     let existingPerson = await loadPatientDataByUuid(
       patient.person.uuid,
-      amrsCon
+      emrcon
     );
     if (existingPerson.person?.person_id && !patient.patient) {
       saved = existingPerson;
     } else if (patient.patient && !existingPerson.person?.person_id) {
-      await savePatientData(patient, amrsCon);
-      saved = await loadPatientDataByUuid(patient.person.uuid, amrsCon);
-      await savePatient(patient, saved.person.person_id, amrsCon);
+      await savePatientData(patient, emrcon);
+      saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
+      console.log(saved);
+      await savePatient(patient, saved.person.person_id, emrcon);
     } else if (
       existingPerson.person?.person_id &&
       patient.patient?.patient_id
     ) {
-      saved = await loadPatientDataByUuid(patient.person.uuid, amrsCon);
-      await savePatient(patient, saved.person.person_id, amrsCon);
+      saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
+      await savePatient(patient, saved.person.person_id, emrcon);
     }
 
     let insertMap: InsertedMap = {
@@ -52,42 +53,42 @@ export default async function transferPatientToAmrs(personId: number) {
       obs: {},
       orders: {},
     };
-    await savePersonAddress(patient, insertMap, amrsCon);
-    await savePersonName(patient, insertMap, amrsCon);
+    await savePersonAddress(patient, insertMap, emrcon);
+    await savePersonName(patient, insertMap, emrcon);
     await savePatientIdentifiers(
       patient.identifiers,
       patient,
       insertMap,
-      amrsCon
+      emrcon
     );
-    await savePersonAttributes(patient, insertMap, amrsCon);
+    await savePersonAttributes(patient, insertMap, emrcon);
     await saveProgramEnrolments(
       patient.patientPrograms,
       patient,
       insertMap,
-      amrsCon
+      emrcon
     );
-    await saveVisitData(patient, insertMap, kenyaEmrCon, amrsCon);
-    await saveEncounterData(patient.encounter, insertMap, amrsCon, kenyaEmrCon);
+    await saveVisitData(patient, insertMap, emrcon, amrsEmrCon);
+    await saveEncounterData(patient.encounter, insertMap, amrsEmrCon, emrcon);
     await saveProviderData(
       patient.provider,
       patient,
       insertMap,
-      kenyaEmrCon,
-      amrsCon
+      emrcon,
+      amrsEmrCon
     );
-    await savePatientOrders(patient.orders, patient, insertMap, amrsCon);
-    await savePatientObs(patient.obs, patient, insertMap, amrsCon);
-    saved = await loadPatientDataByUuid(patient.person.uuid, amrsCon);
+    await savePatientOrders(patient.orders, patient, insertMap, emrcon);
+    await savePatientObs(patient.obs, patient, insertMap, emrcon);
+    saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
     // console.log('saved patient', saved, insertMap);
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
-    await CM.rollbackTransaction(amrsCon);
-    await CM.releaseConnections(amrsCon, kenyaEmrCon);
+    await CM.rollbackTransaction(emrcon);
+    await CM.releaseConnections(emrcon, amrsEmrCon);
     return { synced: true, message: null };
   } catch (er) {
     console.error("Error saving patient: " + patient.person.person_id, er);
-    await CM.rollbackTransaction(amrsCon);
-    await CM.releaseConnections(amrsCon, kenyaEmrCon);
+    await CM.rollbackTransaction(emrcon);
+    await CM.releaseConnections(emrcon, amrsEmrCon);
     return { synced: false, message: er.message };
   }
 }

@@ -64,7 +64,7 @@ export function toPatientInsertStatement(
   patient: Patient,
   replaceColumns?: any
 ) {
-  return toInsertSql(patient, [""], "patient", replaceColumns);
+  return toInsertSql(patient, ["allergy_status"], "patient", replaceColumns);
 }
 export async function savePersonAddress(
   patient: PatientData,
@@ -81,9 +81,9 @@ export async function savePersonAddress(
       voided_by: userMap[patient.address.voided_by],
       person_id: insertMap.patient,
       address1: patient.address.county_district, //County
-      address3: patient.address.address2, //Landmark
-      address8: patient.address.address6, //Location,
-      address9: patient.address.address5, //Sub Location,
+      address2: patient.address.address2, //Landmark
+      address6: patient.address.address6, //Location,
+      address5: patient.address.address5, //Sub Location,
     };
     if (
       !updateStatement ||
@@ -122,7 +122,18 @@ export function toPersonAddressInsertStatement(
 ) {
   return toInsertSql(
     personAddress,
-    ["person_address_id"],
+    [
+      "person_address_id",
+      "address7",
+      "address8",
+      "address9",
+      "address10",
+      "address11",
+      "address12",
+      "address13",
+      "address14",
+      "address15",
+    ],
     "person_address",
     replaceColumns
   );

@@ -14,6 +14,7 @@ export const KenyaEMR_National_ID = 8;
 export const AMR_National_ID = 1;
 export const KenyaEMR_ID = 2;
 export const AMR_KenyaEMR_ID = 4;
+export const AMRS_CCC_ID = 28;
 
 export async function savePatientIdentifiers(
   identifiersToSave: PatientIdentifier[],
@@ -21,7 +22,8 @@ export async function savePatientIdentifiers(
   insertMap: InsertedMap,
   connection: Connection
 ) {
-  await saveKnownIdentifiers(identifiersToSave, insertMap, connection);
+  const a = await handleAmrsIdentifiers(identifiersToSave);
+  await saveKnownIdentifiers(a, insertMap, connection);
 }
 
 export async function saveKnownIdentifiers(
@@ -34,21 +36,21 @@ export async function saveKnownIdentifiers(
   }
 }
 
-function handleKenyaEmrIdentifiers(identifiers: PatientIdentifier[]) {
+function handleAmrsIdentifiers(identifiers: PatientIdentifier[]) {
   let formattedKenyaEMRIdentifiers: any[] = [];
   for (const p of identifiers) {
     let newId: PatientIdentifier = Object.assign({}, p);
     switch (p.identifier_type) {
-      case KenyaEMR_CCC_ID:
+      case AMRS_CCC_ID:
         handleCccId(newId);
         break;
 
       case KenyaEMR_National_ID:
-        handleNationalId(newId);
+        //handleNationalId(newId);
         break;
 
       case KenyaEMR_ID:
-        handleKenyaEmrId(newId);
+        //handleKenyaEmrId(newId);
         break;
       default:
         continue;
@@ -59,12 +61,15 @@ function handleKenyaEmrIdentifiers(identifiers: PatientIdentifier[]) {
 }
 
 export function handleCccId(identifier: PatientIdentifier) {
-  identifier.identifier_type = AMR_CCC_ID;
-  identifier.identifier = toAmrsCccId(identifier.identifier);
+  identifier.identifier_type = KenyaEMR_CCC_ID;
+  identifier.identifier = toemrCccId(identifier.identifier);
 }
 
 export function toAmrsCccId(identifier: string): string {
   return identifier.slice(0, 5) + "-" + identifier.slice(identifier.length - 5);
+}
+export function toemrCccId(identifier: string): string {
+  return identifier.replace("-", "");
 }
 
 export function handleNationalId(identifier: PatientIdentifier) {
@@ -85,6 +90,7 @@ export async function saveIdentifier(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
+      identifier_type: 3,
       creator: userMap[identifier.creator],
       changed_by: userMap[identifier.changed_by],
       voided_by: userMap[identifier.voided_by],
@@ -112,30 +118,6 @@ export function toIdentifierInsertStatement(
     replaceColumns
   );
 }
-
-export function comparePatientIdentifiers(
-  kenyaEMRIdentifiers: any[],
-  amrsIdentifiers: Array<any>
-): Array<any> {
-  let newPatientIdentifiers: any[] = [];
-  const theAmrsIdentifiers = getIdentifiers(amrsIdentifiers);
-  if (amrsIdentifiers?.length && amrsIdentifiers) {
-    const formattedIdentifiers = handleKenyaEmrIdentifiers(kenyaEMRIdentifiers);
-    formattedIdentifiers.forEach((identifier) => {
-      if (theAmrsIdentifiers.includes(identifier?.identifier)) {
-        console.log("Identifier already existing");
-      } else {
-        newPatientIdentifiers.push(identifier);
-      }
-    });
-  } else {
-    newPatientIdentifiers.push(
-      ...handleKenyaEmrIdentifiers(kenyaEMRIdentifiers)
-    );
-  }
-  return newPatientIdentifiers;
-}
-
 export function getIdentifiers(identifiers: Array<any>): Array<string> {
   let identifierList: Array<string> = [];
   identifiers.forEach((identifier) => {

@@ -1,6 +1,5 @@
 import { saveEncounter } from "./encounters/save-encounters";
 import transferPatientToAmrs from "./patients/copy-over-patient";
-import updatePatientInAmrs from "./patients/update-patient";
 import writeCsv from "./write-csv";
 
 const readCSV = require("./read-csv");
@@ -40,16 +39,6 @@ async function start(action: string) {
           break;
         }
       }
-      console.log("========end==========");
-    }
-  } else {
-    for (const ePatient of existingPatients) {
-      console.log("=======start===========");
-      let status = await updatePatientInAmrs(
-        ePatient["KenyaEMR personID"],
-        ePatient["AMRS person uuid"]
-      );
-      console.log(status, ePatient["KenyaEMR personID"]);
       console.log("========end==========");
     }
   }

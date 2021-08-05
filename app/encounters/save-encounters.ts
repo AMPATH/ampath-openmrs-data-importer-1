@@ -39,6 +39,7 @@ export async function saveEncounter(
   userMap?: any
 ) {
   let replaceColumns = {};
+  // Map encounter to respective kenyaemr encounters and forms
   for (const enc of encounter) {
     const kemrEncounterTypeId = await fetchEncounterType(
       enc.encounter_type,
@@ -62,7 +63,7 @@ export async function saveEncounter(
     }
     const savedEncounter = await CM.query(
       toEncounterInsertStatement(enc, replaceColumns),
-      amrsConnection
+      kemrsConnection
     );
     insertMap.encounters[enc.encounter_id] = savedEncounter.insertId;
     await saveEncounterProviderData(
@@ -77,6 +78,7 @@ export async function saveEncounterProviderData(
   enc: Encounter,
   encounterId: number,
   connection: Connection,
+  emrCON: Connection,
   userMap?: any
 ) {
   const EncounterProviders = await fetchEncounterProviders(
@@ -106,7 +108,7 @@ export async function saveEncounterProviderData(
     if (encounterProviderExist.length === 0) {
       await CM.query(
         toEncounterProviderInsertStatement(enc_provider, replaceColumns),
-        connection
+        emrCON
       );
     }
   }
