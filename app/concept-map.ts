@@ -3,9 +3,7 @@ const readCsv = require("./read-csv");
 export default class ConceptMapper {
   private static _instance: ConceptMapper;
   private _conceptMap?: ConceptMap;
-
-  private mappedConceptsPath = "metadata/found.csv";
-  private replaceConceptsPath = "metadata/replace-concepts-in-memory.csv";
+  private _amrsConceptMap?: AmrsConceptMap;
 
   private constructor() {}
   static get instance(): ConceptMapper {
@@ -19,47 +17,85 @@ export default class ConceptMapper {
     if (this._conceptMap) {
       return;
     }
-    let concepts = await readCsv(this.mappedConceptsPath);
-    let conceptsToReplace = await readCsv(this.replaceConceptsPath);
-    // console.log('Mapped Concepts', concepts.grouped);
+
+    if (this._amrsConceptMap) {
+      return;
+    }
+    const greenCard = await readCsv("metadata/forms/green_card.csv");
+    const discontinuation = await readCsv("metadata/forms/discontinuation.csv");
+    const triage = await readCsv("metadata/forms/triage.csv");
+    const enrollment = await readCsv("metadata/forms/enrollment.csv");
+    const adultreturn = await readCsv(
+      "metadata/forms/amrs/adult_initial_v4.1.csv"
+    );
+
     let map: any = {};
-    for (let o in concepts.grouped) {
-      if (conceptsToReplace.grouped[o]) {
-        map[o] = conceptsToReplace.grouped[o][0];
-        // console.log('replacing concept', conceptsToReplace.grouped[o][0]);
-        continue;
+    let amrsMap: any = {};
+    greenCard.array.forEach(
+      (element: { amrs_concept_id: any; emr_concept_id: any }) => {
+        if (element.amrs_concept_id) {
+          map[element.amrs_concept_id] = [
+            element.emr_concept_id,
+            "a0034eee-1940-4e35-847f-97537a35d05e",
+            "34",
+          ];
+        }
       }
-      map[o] = concepts.grouped[o][0];
-    }
-
-    let replaced = 0;
-    for (let o in conceptsToReplace.grouped) {
-      if (!map[o]) {
-        // console.log("replacing concepts", conceptsToReplace.grouped[o][0]);
-        replaced++;
-        map[o] = conceptsToReplace.grouped[o][0];
+    );
+    discontinuation.array.forEach(
+      (element: { amrs_concept_id: any; emr_concept_id: any }) => {
+        if (element.amrs_concept_id) {
+          map[element.amrs_concept_id] = [
+            element.emr_concept_id,
+            "2bdada65-4c72-4a48-8730-859890e25cee",
+            "8",
+          ];
+        }
       }
-    }
-    console.log("concepts replaced in memory count: ", replaced);
-
+    );
+    triage.array.forEach(
+      (element: { amrs_concept_id: any; emr_concept_id: any }) => {
+        if (element.amrs_concept_id) {
+          map[element.amrs_concept_id] = [
+            element.emr_concept_id,
+            "d1059fb9-a079-4feb-a749-eedd709ae542",
+            "7",
+          ];
+        }
+      }
+    );
+    enrollment.array.forEach(
+      (element: { amrs_concept_id: any; emr_concept_id: any }) => {
+        if (element.amrs_concept_id) {
+          map[element.amrs_concept_id] = [
+            element.emr_concept_id,
+            "de78a6be-bfc5-4634-adc3-5f1a280455cc",
+            "14",
+          ];
+        }
+      }
+    );
+    adultreturn.array.forEach(
+      (element: { amrs_concept_id: any; emr_concept_id: any }) => {
+        if (element.amrs_concept_id) {
+          amrsMap[element.amrs_concept_id] = [element.emr_concept_id];
+        }
+      }
+    );
     this._conceptMap = map;
-    // console.log('Mapped Concepts', map);
+    this._amrsConceptMap = amrsMap;
   }
 
   get conceptMap(): ConceptMap {
     return this._conceptMap || {};
   }
+  get amrsConceptMap(): AmrsConceptMap {
+    return this._amrsConceptMap || {};
+  }
 }
-
-export type FoundConcept = {
-  concept_id: string;
-  code: string;
-  source: string;
-  datatype: string;
-  amrs_id: string;
-  amrs_datatype: string;
-};
-
 export type ConceptMap = {
-  [source_concept_id: string]: FoundConcept;
+  [source_concept_id: number]: [string, string, string];
+};
+export type AmrsConceptMap = {
+  [source_concept_id: number]: [number];
 };

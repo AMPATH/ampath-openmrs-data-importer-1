@@ -1,4 +1,3 @@
-import { saveEncounter } from "./encounters/save-encounters";
 import transferPatientToAmrs from "./patients/copy-over-patient";
 import writeCsv from "./write-csv";
 
@@ -14,9 +13,6 @@ async function start(action: string) {
   const patientIds = await readCSV(patientIdsPath);
   const patients = patientIds.array.map((p: any) => p.patient_id);
   const existingPatientsIds = await readCSV(existingPatientIdsPath);
-  const existingPatients = existingPatientsIds.array.map(
-    (existing: any) => existing
-  );
   let synced = 0;
   let failed = 0;
   let encProvErrors = [];

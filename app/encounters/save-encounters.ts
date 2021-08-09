@@ -11,6 +11,7 @@ import {
 } from "./load-encounters";
 import ProviderMapper from "../providers/provider-map";
 import FormMapper from "./form-map";
+import EncounterObsMapper from "./amrs-emr-encounter-map";
 
 const CM = ConnectionManager.getInstance();
 
@@ -18,7 +19,8 @@ export default async function saveEncounterData(
   encounters: Encounter[],
   insertMap: InsertedMap,
   amrsconnection: Connection,
-  kemrConnection: Connection
+  kemrConnection: Connection,
+  personId: number
 ) {
   //Todo add form mapper
   await UserMapper.instance.initialize();
@@ -28,51 +30,49 @@ export default async function saveEncounterData(
     kemrConnection,
     amrsconnection,
     insertMap,
+    personId,
     UserMapper.instance.userMap
   );
 }
 export async function saveEncounter(
-  encounter: Encounter[],
-  kemrsConnection: Connection,
+  _encounter: Encounter[],
+  _kemrsConnection: Connection,
   amrsConnection: Connection,
-  insertMap: InsertedMap,
-  userMap?: any
+  _insertMap: InsertedMap,
+  personId: number,
+  _userMap?: any
 ) {
   let replaceColumns = {};
+  let encounterMapping = new EncounterObsMapper();
   // Map encounter to respective kenyaemr encounters and forms
-  for (const enc of encounter) {
-    const kemrEncounterTypeId = await fetchEncounterType(
-      enc.encounter_type,
-      kemrsConnection
-    );
-    const amrsEncounterTypeId = await fetchAmrsEncounterType(
-      kemrEncounterTypeId.uuid,
-      amrsConnection
-    );
-    if (userMap) {
-      replaceColumns = {
-        creator: userMap[enc.creator],
-        changed_by: userMap[enc.changed_by],
-        voided_by: userMap[enc.voided_by],
-        encounter_type: amrsEncounterTypeId.encounter_type_id,
-        form_id: FormMapper.instance.formMap[enc.form_id],
-        visit_id: insertMap.visits[enc.visit_id],
-        location_id: 214,
-        patient_id: insertMap.patient,
-      };
-    }
-    const savedEncounter = await CM.query(
-      toEncounterInsertStatement(enc, replaceColumns),
-      kemrsConnection
-    );
-    insertMap.encounters[enc.encounter_id] = savedEncounter.insertId;
-    await saveEncounterProviderData(
-      enc,
-      savedEncounter.insertId,
-      amrsConnection,
-      userMap
-    );
-  }
+
+  let encounterObs = await encounterMapping.retrieveobs(
+    personId,
+    amrsConnection
+  );
+  // if (userMap) {
+  //   replaceColumns = {
+  //     creator: userMap[enc.creator],
+  //     changed_by: userMap[enc.changed_by],
+  //     voided_by: userMap[enc.voided_by],
+  //     encounter_type: amrsEncounterTypeId.encounter_type_id,
+  //     form_id: FormMapper.instance.formMap[enc.form_id],
+  //     visit_id: insertMap.visits[enc.visit_id],
+  //     location_id: 214,
+  //     patient_id: insertMap.patient,
+  //   };
+  // }
+  // const savedEncounter = await CM.query(
+  //   toEncounterInsertStatement(enc, replaceColumns),
+  //   kemrsConnection
+  // );
+  // insertMap.encounters[enc.encounter_id] = savedEncounter.insertId;
+  // await saveEncounterProviderData(
+  //   enc,
+  //   savedEncounter.insertId,
+  //   amrsConnection,
+  //   userMap
+  // );
 }
 export async function saveEncounterProviderData(
   enc: Encounter,

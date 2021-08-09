@@ -1,46 +1,59 @@
 import { Connection } from "mysql";
-import readCsv from "../read-csv";
-import { Encounter, Obs } from "../tables.types";
+import ConceptMapper from "../concept-map";
+import { Obs } from "../tables.types";
 import loadPatientObs from "./load-patient-obs";
+let path = require("path");
 
 export default class EncounterObsMapper {
-  private constructor() {}
+  public constructor() {}
+
   async retrieveobs(patientId: number, connection: Connection) {
-    let obs = await loadPatientObs(patientId, connection);
-    for (let index = 0; index < obs.length; index++) {
-      const element = obs[index];
-      this.mapencounter(element);
-      break;
+    await ConceptMapper.instance.initialize();
+    let obss = await loadPatientObs(patientId, connection);
+    let mappedObs: any = [];
+    for (let i = 0; i < obss.length; i++) {
+      const element = obss[i];
+      let mapper = await this.mapencounter(element, ConceptMapper.instance);
+      if (mapper.encounterTypeUuid) {
+        mappedObs.push(mapper);
+      }
     }
-  }
-  async mapencounter(obs: Obs) {
-    // prepare dictionaries
-    let greenCard = await readCsv("../../metadata/forms/green_card.csv");
-    let discontinuation = await readCsv(
-      "../../metadata/forms/discontinuation.csv"
+    const groups = mappedObs.reduce(
+      (
+        groups: { [x: string]: any },
+        item: { encounterTypeUuid: string | number }
+      ) => ({
+        ...groups,
+        [item.encounterTypeUuid]: [
+          ...(groups[item.encounterTypeUuid] || []),
+          item,
+        ],
+      }),
+      {}
     );
-    let triage = await readCsv("../../metadata/forms/triage.csv");
-    let enrollment = await readCsv("../../metadata/forms/enrollment.csv");
-    console.log(discontinuation);
+    console.log("aye", obss.length, mappedObs.length, groups);
+  }
+  async mapencounter(ob: Obs, d: ConceptMapper) {
+    // prepare dictionaries
+    let encounterObs: EncounterObs = {};
+    // map amrs to kenya emr
+    let mappedEmrConcept = d.amrsConceptMap[ob.concept_id];
+
+    if (mappedEmrConcept) {
+      let map = d.conceptMap[parseInt(mappedEmrConcept.toString(), 0)];
+      if (map) {
+        // allocate the obs to the right kenyaemr encounter
+        ob.concept_id = parseInt(map[0]);
+        encounterObs.encounterTypeUuid = map[1];
+        encounterObs.formId = map[2];
+        encounterObs.obs = ob;
+      }
+    }
+    return encounterObs;
   }
 }
 export type EncounterObs = {
-  greenCard: {
-    encDetails: EncounterDetails;
-  };
-  triage: {
-    encDetails: EncounterDetails;
-  };
-  discontinuation: {
-    encDetails: EncounterDetails;
-  };
-  enrollment: {
-    encDetails: EncounterDetails;
-  };
-};
-
-export type EncounterDetails = {
-  encounterTypeUuid: string;
-  formUuid: string;
-  obs: [];
+  encounterTypeUuid?: string;
+  formId?: string;
+  obs?: {};
 };
