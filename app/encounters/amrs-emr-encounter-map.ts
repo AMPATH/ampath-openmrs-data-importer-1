@@ -21,17 +21,17 @@ export default class EncounterObsMapper {
     const groups = mappedObs.reduce(
       (
         groups: { [x: string]: any },
-        item: { encounterTypeUuid: string | number }
+        item: { obs: { encounter_id: string | number } }
       ) => ({
         ...groups,
-        [item.encounterTypeUuid]: [
-          ...(groups[item.encounterTypeUuid] || []),
+        [item.obs.encounter_id]: [
+          ...(groups[item.obs.encounter_id] || []),
           item,
         ],
       }),
       {}
     );
-    console.log("aye", obss.length, mappedObs.length, groups);
+    return groups;
   }
   async mapencounter(ob: Obs, d: ConceptMapper) {
     // prepare dictionaries
@@ -42,18 +42,44 @@ export default class EncounterObsMapper {
     if (mappedEmrConcept) {
       let map = d.conceptMap[parseInt(mappedEmrConcept.toString(), 0)];
       if (map) {
+        if (ob.encounter_id === null) {
+          ob.encounter_id = 0;
+          encounterObs.obs = ob;
+          encounterObs.encounterTypeUuid = "unknown";
+          return encounterObs;
+        }
         // allocate the obs to the right kenyaemr encounter
         ob.concept_id = parseInt(map[0]);
         encounterObs.encounterTypeUuid = map[1];
+        encounterObs.encounterTypId = map[3];
         encounterObs.formId = map[2];
+        ob.concept_id = parseInt(d.amrsConceptMap[ob.concept_id].toString(), 0);
+        if (ob.value_coded) {
+          ob.value_coded = parseInt(
+            d.amrsConceptMap[ob.value_coded].toString(),
+            0
+          );
+        }
+
         encounterObs.obs = ob;
+      } else {
+        //doesn't exist in kenya emr forms
+        //console.log("Unknown",ob);
       }
+    } else {
+      // unmapped concepts
+      //console.log("Unmapped",ob);
     }
     return encounterObs;
   }
 }
 export type EncounterObs = {
   encounterTypeUuid?: string;
+  encounterTypId?: string;
   formId?: string;
+  visitId?: string;
+  creator?: string;
+  changed_by?: string;
+  voided_by?: string;
   obs?: {};
 };

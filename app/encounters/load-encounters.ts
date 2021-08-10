@@ -47,8 +47,8 @@ export async function fetchAmrsEncounterType(
 }
 
 export async function fetchEncounterProviders(
-  encounterId: number,
-  connection: Connection
+  connection: Connection,
+  encounterId?: number
 ) {
   const sql = `select * from encounter_provider where encounter_id= '${encounterId}'`;
   let results: EncounterProvider[] = await CM.query(sql, connection);

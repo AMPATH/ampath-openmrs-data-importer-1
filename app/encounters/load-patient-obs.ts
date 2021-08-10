@@ -9,6 +9,7 @@ export default async function loadPatientObs(
   connection: Connection
 ) {
   const sql = `select * from obs where person_id = ${personId} order by obs_group_id asc`;
+  console.log(sql);
   let results: Obs[] = await CM.query(sql, connection);
   return results;
 }

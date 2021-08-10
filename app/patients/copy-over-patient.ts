@@ -7,42 +7,32 @@ import savePatientData, {
 import loadPatientData, { loadPatientDataByUuid } from "./load-patient-data";
 import saveVisitData from "../visits/save-visit-data";
 import { InsertedMap } from "../inserted-map";
-import savePatientObs from "../encounters/save-obs";
+//import savePatientObs from "../encounters/save-obs";
 import saveProviderData from "../providers/save-provider-data";
 import saveEncounterData from "../encounters/save-encounters";
-import savePatientOrders from "../encounters/save-orders";
+//import savePatientOrders from "../encounters/save-orders";
 import { saveProgramEnrolments } from "./save-program-enrolment";
 import { savePatientIdentifiers } from "./save-identifiers";
 import { savePersonAttributes } from "./save-person-attribute";
+import savePatientOrders from "../encounters/save-orders";
+import savePatientObs from "../encounters/save-obs";
 const CM = ConnectionManager.getInstance();
 
 export default async function transferPatientToAmrs(personId: number) {
+  console.log("patient-id", personId);
   const amrsEmrCon = await CM.getConnectionAmrs();
   const patient = await loadPatientData(personId, amrsEmrCon);
   await CM.commitTransaction(amrsEmrCon);
-  console.log("patient", patient.identifiers);
+  //console.log("patient", patient);
   let emrcon = await CM.getConnectionKenyaemr();
   emrcon = await CM.startTransaction(emrcon);
   try {
     let saved = { person: patient.person };
-    let existingPerson = await loadPatientDataByUuid(
-      patient.person.uuid,
-      emrcon
-    );
-    if (existingPerson.person?.person_id && !patient.patient) {
-      saved = existingPerson;
-    } else if (patient.patient && !existingPerson.person?.person_id) {
-      await savePatientData(patient, emrcon);
-      saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
-      console.log(saved);
-      await savePatient(patient, saved.person.person_id, emrcon);
-    } else if (
-      existingPerson.person?.person_id &&
-      patient.patient?.patient_id
-    ) {
-      saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
-      await savePatient(patient, saved.person.person_id, emrcon);
-    }
+
+    await savePatientData(patient, emrcon);
+    saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
+
+    await savePatient(patient, saved.person.person_id, emrcon);
 
     let insertMap: InsertedMap = {
       patient: saved.person.person_id,
@@ -53,6 +43,7 @@ export default async function transferPatientToAmrs(personId: number) {
       obs: {},
       orders: {},
     };
+
     await savePersonAddress(patient, insertMap, emrcon);
     await savePersonName(patient, insertMap, emrcon);
     await savePatientIdentifiers(
@@ -69,7 +60,13 @@ export default async function transferPatientToAmrs(personId: number) {
       emrcon
     );
     await saveVisitData(patient, insertMap, emrcon, amrsEmrCon);
-    await saveEncounterData(patient.encounter, insertMap, amrsEmrCon, emrcon);
+    await saveEncounterData(
+      patient.encounter,
+      insertMap,
+      amrsEmrCon,
+      emrcon,
+      personId
+    );
     await saveProviderData(
       patient.provider,
       patient,
@@ -78,9 +75,10 @@ export default async function transferPatientToAmrs(personId: number) {
       amrsEmrCon
     );
     await savePatientOrders(patient.orders, patient, insertMap, emrcon);
-    await savePatientObs(patient.obs, patient, insertMap, emrcon);
+    // console.log('saved patient',patient, saved, insertMap);
+    //await savePatientObs(patient.obs, patient, insertMap, emrcon);
     saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
-    // console.log('saved patient', saved, insertMap);
+
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     await CM.rollbackTransaction(emrcon);
     await CM.releaseConnections(emrcon, amrsEmrCon);

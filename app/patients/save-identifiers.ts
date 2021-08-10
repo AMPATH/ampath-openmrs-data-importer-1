@@ -94,7 +94,7 @@ export async function saveIdentifier(
       creator: userMap[identifier.creator],
       changed_by: userMap[identifier.changed_by],
       voided_by: userMap[identifier.voided_by],
-      location_id: 214, //TODO replace with actual location
+      location_id: 5381, //TODO replace with actual location
       patient_id: insertMap.patient,
     };
   }

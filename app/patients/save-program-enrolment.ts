@@ -46,7 +46,7 @@ export async function saveProgramEnrolment(
       creator: userMap[enrolment.creator],
       changed_by: userMap[enrolment.changed_by],
       voided_by: userMap[enrolment.voided_by],
-      location_id: 214, //TODO replace with actual location
+      location_id: 5381, //TODO replace with actual location
       patient_id: insertMap.patient,
       program_id: programId,
     };

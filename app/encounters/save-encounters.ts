@@ -1,17 +1,20 @@
 import { Connection } from "mysql";
-import { Encounter, EncounterProvider } from "../tables.types";
+import { Encounter, EncounterProvider, Obs } from "../tables.types";
 import ConnectionManager from "../connection-manager";
 import UserMapper from "../users/user-map";
 import toInsertSql from "../prepare-insert-sql";
 import { InsertedMap } from "../inserted-map";
 import {
   fetchAmrsEncounterType,
+  fetchEncounter,
   fetchEncounterProviders,
   fetchEncounterType,
+  fetchKemrEncounterById,
 } from "./load-encounters";
 import ProviderMapper from "../providers/provider-map";
 import FormMapper from "./form-map";
 import EncounterObsMapper from "./amrs-emr-encounter-map";
+import savePatientObs, { saveObs } from "./save-obs";
 
 const CM = ConnectionManager.getInstance();
 
@@ -36,43 +39,76 @@ export default async function saveEncounterData(
 }
 export async function saveEncounter(
   _encounter: Encounter[],
-  _kemrsConnection: Connection,
+  kemrsConnection: Connection,
   amrsConnection: Connection,
-  _insertMap: InsertedMap,
+  insertMap: InsertedMap,
   personId: number,
-  _userMap?: any
+  userMap?: any
 ) {
   let replaceColumns = {};
-  let encounterMapping = new EncounterObsMapper();
   // Map encounter to respective kenyaemr encounters and forms
-
-  let encounterObs = await encounterMapping.retrieveobs(
+  let encounterObsMapper = new EncounterObsMapper();
+  let encounter: any = await encounterObsMapper.retrieveobs(
     personId,
     amrsConnection
   );
-  // if (userMap) {
-  //   replaceColumns = {
-  //     creator: userMap[enc.creator],
-  //     changed_by: userMap[enc.changed_by],
-  //     voided_by: userMap[enc.voided_by],
-  //     encounter_type: amrsEncounterTypeId.encounter_type_id,
-  //     form_id: FormMapper.instance.formMap[enc.form_id],
-  //     visit_id: insertMap.visits[enc.visit_id],
-  //     location_id: 214,
-  //     patient_id: insertMap.patient,
-  //   };
-  // }
-  // const savedEncounter = await CM.query(
-  //   toEncounterInsertStatement(enc, replaceColumns),
-  //   kemrsConnection
-  // );
-  // insertMap.encounters[enc.encounter_id] = savedEncounter.insertId;
-  // await saveEncounterProviderData(
-  //   enc,
-  //   savedEncounter.insertId,
-  //   amrsConnection,
-  //   userMap
-  // );
+  for (const enc of Object.keys(encounter)) {
+    let visitId = null;
+    if (encounter[enc][0].obs.visit_id) {
+      visitId = encounter[enc][0].obs.visit_id;
+    }
+    //console.log('encounter', encounter[parseInt(enc, 0)])
+    if (enc !== "0") {
+      let enc2 = await fetchKemrEncounterById(parseInt(enc, 0), amrsConnection);
+      if (userMap) {
+        replaceColumns = {
+          creator: userMap[encounter[parseInt(enc, 0)][0].obs.creator],
+          changed_by: userMap[encounter[parseInt(enc, 0)][0].obs.changed_by],
+          voided_by: userMap[encounter[parseInt(enc, 0)][0].obs.voided_by],
+          encounter_type: encounter[parseInt(enc, 0)][0].encounterTypId,
+          form_id: parseInt(encounter[enc][0].formId, 0),
+          visit_id: insertMap.visits[visitId],
+          location_id: 5381,
+          patient_id: insertMap.patient,
+        };
+      }
+      const savedEncounter = await CM.query(
+        toEncounterInsertStatement(enc2[0], replaceColumns),
+        kemrsConnection
+      );
+      let obsToInsert: Obs[] = [];
+      encounter[parseInt(enc, 0)].map((a: any) => {
+        obsToInsert.push(a.obs);
+      });
+      insertMap.encounters = savedEncounter.insertId;
+
+      const savedObs = await savePatientObs(
+        obsToInsert,
+        insertMap,
+        kemrsConnection,
+        savedEncounter.insertId
+      );
+      await saveEncounterProviderData(
+        enc2,
+        savedEncounter.insertId,
+        amrsConnection,
+        userMap
+      );
+    } else {
+      //save obs without encounters
+      let obsToInsert: Obs[] = [];
+      encounter[parseInt(enc, 0)].map((a: any) => {
+        obsToInsert.push(a.obs);
+      });
+
+      const savedObsWithoutEncounter = await savePatientObs(
+        obsToInsert,
+        insertMap,
+        kemrsConnection,
+        null
+      );
+    }
+  }
 }
 export async function saveEncounterProviderData(
   enc: Encounter,
@@ -82,28 +118,24 @@ export async function saveEncounterProviderData(
   userMap?: any
 ) {
   const EncounterProviders = await fetchEncounterProviders(
-    enc.encounter_id,
-    connection
+    connection,
+    enc.encounter_id
   );
   await ProviderMapper.instance.initialize();
   // console.log("Inserting encounter providers", EncounterProviders);
   let replaceColumns = {};
   for (const enc_provider of EncounterProviders) {
-    const providerId =
-      ProviderMapper.instance.providerMap[enc_provider.provider_id];
-    console.log("Prpovides", enc_provider.provider_id);
-    if (userMap) {
+    const providerId = 1;
+    //ProviderMapper.instance.providerMap[enc_provider.provider_id];
+    if (enc_provider) {
       replaceColumns = {
-        creator: userMap[enc_provider.creator],
-        changed_by: userMap[enc_provider.changed_by],
-        voided_by: userMap[enc_provider.voided_by],
         encounter_id: encounterId,
         provider_id: providerId + "-Migrated",
       };
     }
     let encounterProviderExist = await fetchEncounterProviders(
-      enc_provider.encounter_id,
-      connection
+      connection,
+      enc_provider.encounter_id
     );
     if (encounterProviderExist.length === 0) {
       await CM.query(

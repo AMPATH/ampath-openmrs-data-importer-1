@@ -1,5 +1,5 @@
-//import { ObsMap } from "./encounters/save-obs";
-//import { OrderMap } from "./encounters/save-orders";
+import { ObsMap } from "./encounters/save-obs";
+import { OrderMap } from "./encounters/save-orders";
 
 export type InsertedMap = {
   patient: number;
@@ -21,6 +21,6 @@ export type InsertedMap = {
   personAttributes?: {
     [kenyaEmrId: number]: number;
   };
-  // obs: ObsMap;
-  // orders: OrderMap;
+  obs: ObsMap;
+  orders: OrderMap;
 };

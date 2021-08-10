@@ -38,6 +38,7 @@ export default class ConceptMapper {
             element.emr_concept_id,
             "a0034eee-1940-4e35-847f-97537a35d05e",
             "34",
+            "8",
           ];
         }
       }
@@ -49,6 +50,7 @@ export default class ConceptMapper {
             element.emr_concept_id,
             "2bdada65-4c72-4a48-8730-859890e25cee",
             "8",
+            "2",
           ];
         }
       }
@@ -60,6 +62,7 @@ export default class ConceptMapper {
             element.emr_concept_id,
             "d1059fb9-a079-4feb-a749-eedd709ae542",
             "7",
+            "6",
           ];
         }
       }
@@ -71,6 +74,7 @@ export default class ConceptMapper {
             element.emr_concept_id,
             "de78a6be-bfc5-4634-adc3-5f1a280455cc",
             "14",
+            "7",
           ];
         }
       }
@@ -94,8 +98,8 @@ export default class ConceptMapper {
   }
 }
 export type ConceptMap = {
-  [source_concept_id: number]: [string, string, string];
+  [source_concept_id: number]: [string, string, string, string];
 };
 export type AmrsConceptMap = {
-  [source_concept_id: number]: [number];
+  [source_concept_id: number]: number;
 };

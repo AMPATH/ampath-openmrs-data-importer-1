@@ -24,7 +24,7 @@ export async function savePersonAttributes(
         creator: userMap[attribute.creator],
         changed_by: userMap[attribute.changed_by],
         voided_by: userMap[attribute.voided_by],
-        location_id: 214, //TODO replace with actual location
+        location_id: 5381, //TODO replace with actual location
         person_id: insertMap.patient,
         person_attribute_type_id:
           attributeTypeMap[attribute.person_attribute_type_id],
