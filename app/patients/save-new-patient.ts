@@ -29,6 +29,7 @@ export async function savePerson(
       voided_by: userMap[patient.person.voided_by],
     };
   }
+  await CM.query("SET FOREIGN_KEY_CHECKS = 0", connection);
   await CM.query(
     toPersonInsertStatement(patient.person, replaceColumns),
     connection
@@ -36,7 +37,12 @@ export async function savePerson(
 }
 
 export function toPersonInsertStatement(person: Person, replaceColumns?: any) {
-  return toInsertSql(person, ["person_id"], "person", replaceColumns);
+  return toInsertSql(
+    person,
+    ["person_id", "cause_of_death_non_coded"],
+    "person",
+    replaceColumns
+  );
 }
 
 export async function savePatient(

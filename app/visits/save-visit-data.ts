@@ -19,7 +19,7 @@ export default async function saveVisitData(
   await UserMapper.instance.initialize();
   // console.log("patient visits", patient.visits);
   for (const visit of patient.visits) {
-    const visitAttribute = await fetchVisitAttribute(visit.visit_id, kemrCon);
+    const visitAttribute = await fetchVisitAttribute(visit.visit_id, amrsCon);
     // console.log("Visit attributes", visitAttribute);
     if (visitAttribute) {
       await saveVisitAttribute(
@@ -31,13 +31,13 @@ export default async function saveVisitData(
         visit.uuid,
         kemrCon
       );
-      // console.log("Saved visit attributes", savedVisitAttribute);
+      console.log("Saved visit attributes", savedVisitAttribute);
     }
     await saveVisit(
       visit,
       insertMap.patient,
       insertMap,
-      amrsCon,
+      kemrCon,
       UserMapper.instance.userMap
     );
   }
@@ -53,11 +53,9 @@ export async function saveVisit(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      creator: userMap[visit.creator],
-      changed_by: userMap[visit.changed_by],
-      voided_by: userMap[visit.voided_by],
       patient_id: patientId,
-      location_id: 214,
+      location_id: 5381,
+      visit_type_id: 1,
     };
   }
 
@@ -82,18 +80,6 @@ export async function saveVisitAttribute(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      creator: userMap.find(
-        (user: { kemrUserId: number }) =>
-          user.kemrUserId === visitAttribute.creator
-      )?.amrsUserID,
-      changed_by: userMap.find(
-        (user: { kemrUserId: number }) =>
-          user.kemrUserId === visitAttribute.changed_by
-      )?.amrsUserID,
-      voided_by: userMap.find(
-        (user: { kemrUserId: number }) =>
-          user.kemrUserId === visitAttribute.voided_by
-      )?.amrsUserID,
       visit_id: visitId,
     };
   }
@@ -131,7 +117,7 @@ export function toInsertSql(
       set[o] = obj[o];
     }
   }
-  const sql = mysql.format(`INSERT INTO ${table} SET ?`, [set]);
+  const sql = mysql.format(`REPLACE INTO ${table} SET ?`, [set]);
   console.log("SQL::: ", sql);
   return sql;
 }

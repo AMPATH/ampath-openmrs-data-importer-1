@@ -84,6 +84,7 @@ export function toOrdersInsertStatement(
   encounterMap: any,
   providerMap: any
 ) {
+  console.log("orders", encounterMap, sourceOrder);
   let replaceColumns = {
     creator: userMap[sourceOrder.creator],
     voided_by: userMap[sourceOrder.voided_by],

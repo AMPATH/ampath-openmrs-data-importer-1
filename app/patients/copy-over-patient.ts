@@ -19,11 +19,9 @@ import savePatientObs from "../encounters/save-obs";
 const CM = ConnectionManager.getInstance();
 
 export default async function transferPatientToAmrs(personId: number) {
-  console.log("patient-id", personId);
   const amrsEmrCon = await CM.getConnectionAmrs();
   const patient = await loadPatientData(personId, amrsEmrCon);
   await CM.commitTransaction(amrsEmrCon);
-  //console.log("patient", patient);
   let emrcon = await CM.getConnectionKenyaemr();
   emrcon = await CM.startTransaction(emrcon);
   try {
@@ -33,7 +31,6 @@ export default async function transferPatientToAmrs(personId: number) {
     saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
 
     await savePatient(patient, saved.person.person_id, emrcon);
-
     let insertMap: InsertedMap = {
       patient: saved.person.person_id,
       visits: {},
@@ -52,7 +49,7 @@ export default async function transferPatientToAmrs(personId: number) {
       insertMap,
       emrcon
     );
-    await savePersonAttributes(patient, insertMap, emrcon);
+    await savePersonAttributes(patient, insertMap, amrsEmrCon, emrcon);
     await saveProgramEnrolments(
       patient.patientPrograms,
       patient,
@@ -74,13 +71,13 @@ export default async function transferPatientToAmrs(personId: number) {
       emrcon,
       amrsEmrCon
     );
-    await savePatientOrders(patient.orders, patient, insertMap, emrcon);
+    //await savePatientOrders(patient.orders, patient, insertMap, emrcon);
     // console.log('saved patient',patient, saved, insertMap);
     //await savePatientObs(patient.obs, patient, insertMap, emrcon);
-    saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
+    //saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
 
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
-    await CM.rollbackTransaction(emrcon);
+    await CM.commitTransaction(emrcon);
     await CM.releaseConnections(emrcon, amrsEmrCon);
     return { synced: true, message: null };
   } catch (er) {

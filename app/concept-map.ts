@@ -33,8 +33,8 @@ export default class ConceptMapper {
     let amrsMap: any = {};
     greenCard.array.forEach(
       (element: { amrs_concept_id: any; emr_concept_id: any }) => {
-        if (element.amrs_concept_id) {
-          map[element.amrs_concept_id] = [
+        if (element.emr_concept_id) {
+          map[element.emr_concept_id] = [
             element.emr_concept_id,
             "a0034eee-1940-4e35-847f-97537a35d05e",
             "34",
@@ -45,11 +45,11 @@ export default class ConceptMapper {
     );
     discontinuation.array.forEach(
       (element: { amrs_concept_id: any; emr_concept_id: any }) => {
-        if (element.amrs_concept_id) {
-          map[element.amrs_concept_id] = [
+        if (element.emr_concept_id) {
+          map[element.emr_concept_id] = [
             element.emr_concept_id,
             "2bdada65-4c72-4a48-8730-859890e25cee",
-            "8",
+            "14",
             "2",
           ];
         }
@@ -57,8 +57,8 @@ export default class ConceptMapper {
     );
     triage.array.forEach(
       (element: { amrs_concept_id: any; emr_concept_id: any }) => {
-        if (element.amrs_concept_id) {
-          map[element.amrs_concept_id] = [
+        if (element.emr_concept_id) {
+          map[element.emr_concept_id] = [
             element.emr_concept_id,
             "d1059fb9-a079-4feb-a749-eedd709ae542",
             "7",
@@ -69,11 +69,11 @@ export default class ConceptMapper {
     );
     enrollment.array.forEach(
       (element: { amrs_concept_id: any; emr_concept_id: any }) => {
-        if (element.amrs_concept_id) {
-          map[element.amrs_concept_id] = [
+        if (element.emr_concept_id) {
+          map[element.emr_concept_id] = [
             element.emr_concept_id,
             "de78a6be-bfc5-4634-adc3-5f1a280455cc",
-            "14",
+            "8",
             "7",
           ];
         }

@@ -20,6 +20,9 @@ export default class ConnectionManager {
     return mysql.createPool({
       host: conf.host,
       user: conf.user,
+      connectTimeout: 60 * 60 * 1000,
+      acquireTimeout: 60 * 60 * 1000,
+      timeout: 60 * 60 * 1000,
       password: conf.password,
       database: conf.database,
       port: conf.port,
@@ -135,7 +138,7 @@ export default class ConnectionManager {
     amrsCon.destroy();
   }
   private async closePool(pool: Pool): Promise<any> {
-    return new Promise((success, error) => {
+    return new Promise<void>((success, error) => {
       pool.end((err) => {
         // all connections in the pool have ended
         if (err) {

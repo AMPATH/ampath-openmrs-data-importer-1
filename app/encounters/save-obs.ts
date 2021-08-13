@@ -44,7 +44,6 @@ export async function updateObsGroupIds(
 ) {
   sourceObs.forEach(async (obs) => {
     if (obs.obs_group_id) {
-      console.log(obs);
       await CM.query(
         toObsGroupIdUpdateStatement(obs.obs_id, obs.obs_group_id),
         connection
@@ -153,7 +152,9 @@ export function prepareObs(
     //   // console.warn('Error:', err);
     //   newObs.comments = "invalid";
     // }
-    filtered.push(newObs);
+    if (newObs.concept_id) {
+      filtered.push(newObs);
+    }
     return filtered;
   }, []);
 
@@ -169,13 +170,13 @@ export function assertObsConceptsAreMapped(
     return;
   }
   if (!conceptMap[obs.concept_id]) {
-    throw new Error("Unmapped concept detected. Concept ID: " + obs.concept_id);
+    console.log("Unmapped concept detected. Concept ID: " + obs.concept_id);
   }
 
   if (obs.value_coded && !conceptMap[obs.value_coded]) {
-    throw new Error(
-      "Unmapped value_coded concept detected. Concept ID: " + obs.value_coded
-    );
+    // throw new Error(
+    //   "Unmapped value_coded concept detected. Concept ID: " + obs.value_coded
+    // );
   }
 }
 
@@ -201,11 +202,12 @@ export function mapObsValue(
   sourceObs: Obs,
   conceptMap: AmrsConceptMap
 ) {
-  let foundConcept = conceptMap[sourceObs.concept_id];
-  if (areDatatypeEquivalent(foundConcept)) {
+  let foundConcept: any = conceptMap[sourceObs.concept_id];
+  console.log("Before", foundConcept);
+  if (foundConcept && areDatatypeEquivalent(foundConcept[0])) {
     mapMatchingTypeObsValue(newObs, sourceObs, conceptMap);
   } else {
-    throw new Error("Unresolved conflicting data types detected. Details: ");
+    //throw new Error("Unresolved conflicting data types detected. Details: ");
   }
 }
 
@@ -254,20 +256,20 @@ export function transformObsValue(
 }
 
 export function areDatatypeEquivalent(foundConcept: any): boolean {
-  if (foundConcept.datatype === foundConcept.amrs_datatype) {
+  if (foundConcept?.datatype === foundConcept?.amrs_datatype) {
     return true;
   }
 
   if (
-    foundConcept.datatype === "Datetime" &&
-    foundConcept.amrs_datatype === "Date"
+    foundConcept?.datatype === "Datetime" &&
+    foundConcept?.amrs_datatype === "Date"
   ) {
     return true;
   }
 
   if (
-    foundConcept.datatype === "Date" &&
-    foundConcept.amrs_datatype === "Datetime"
+    foundConcept?.datatype === "Date" &&
+    foundConcept?.amrs_datatype === "Datetime"
   ) {
     return true;
   }
@@ -281,8 +283,9 @@ function mapMatchingTypeObsValue(
   conceptMap: AmrsConceptMap
 ) {
   if (sourceObs.value_coded) {
-    newObs.value_coded = parseInt(
-      conceptMap[sourceObs.value_coded]?.toString()
-    );
+    let a: any = conceptMap[sourceObs.value_coded];
+    if (a) {
+      newObs.value_coded = parseInt(a[0]?.toString());
+    }
   }
 }

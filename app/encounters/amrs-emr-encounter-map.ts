@@ -1,7 +1,7 @@
 import { Connection } from "mysql";
 import ConceptMapper from "../concept-map";
 import { Obs } from "../tables.types";
-import loadPatientObs from "./load-patient-obs";
+import loadPatientObs, { fetchEncounterVisitFromObs } from "./load-patient-obs";
 let path = require("path");
 
 export default class EncounterObsMapper {
@@ -13,7 +13,11 @@ export default class EncounterObsMapper {
     let mappedObs: any = [];
     for (let i = 0; i < obss.length; i++) {
       const element = obss[i];
-      let mapper = await this.mapencounter(element, ConceptMapper.instance);
+      let mapper = await this.mapencounter(
+        element,
+        ConceptMapper.instance,
+        connection
+      );
       if (mapper.encounterTypeUuid) {
         mappedObs.push(mapper);
       }
@@ -33,14 +37,19 @@ export default class EncounterObsMapper {
     );
     return groups;
   }
-  async mapencounter(ob: Obs, d: ConceptMapper) {
+  async mapencounter(ob: Obs, d: ConceptMapper, con: Connection) {
     // prepare dictionaries
     let encounterObs: EncounterObs = {};
     // map amrs to kenya emr
-    let mappedEmrConcept = d.amrsConceptMap[ob.concept_id];
-
-    if (mappedEmrConcept) {
-      let map = d.conceptMap[parseInt(mappedEmrConcept.toString(), 0)];
+    let mappedEmrConcept: any = d.amrsConceptMap[ob.concept_id];
+    //fetch visit for ob
+    let encounter = await fetchEncounterVisitFromObs(ob.encounter_id, con);
+    if (
+      mappedEmrConcept &&
+      mappedEmrConcept.length > 0 &&
+      mappedEmrConcept[0] !== ""
+    ) {
+      let map = d.conceptMap[parseInt(mappedEmrConcept[0], 0)];
       if (map) {
         if (ob.encounter_id === null) {
           ob.encounter_id = 0;
@@ -53,12 +62,17 @@ export default class EncounterObsMapper {
         encounterObs.encounterTypeUuid = map[1];
         encounterObs.encounterTypId = map[3];
         encounterObs.formId = map[2];
-        ob.concept_id = parseInt(d.amrsConceptMap[ob.concept_id].toString(), 0);
+        encounterObs.visitId = encounter.visit_id;
+        //encounterObs.encounterId=encounter.encounter_id
+        //encounterObs.visitId = ;
+        ob.concept_id = mappedEmrConcept[0];
         if (ob.value_coded) {
-          ob.value_coded = parseInt(
-            d.amrsConceptMap[ob.value_coded].toString(),
-            0
-          );
+          let a: any = d.amrsConceptMap[ob.value_coded];
+          if (a) {
+            ob.value_coded = parseInt(a[0]?.toString(), 0);
+          } else {
+            return {};
+          }
         }
 
         encounterObs.obs = ob;
@@ -77,7 +91,8 @@ export type EncounterObs = {
   encounterTypeUuid?: string;
   encounterTypId?: string;
   formId?: string;
-  visitId?: string;
+  encounterId?: number;
+  visitId?: number;
   creator?: string;
   changed_by?: string;
   voided_by?: string;

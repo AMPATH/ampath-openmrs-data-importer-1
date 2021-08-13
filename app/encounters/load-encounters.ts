@@ -110,6 +110,5 @@ export async function loadEncounterFormsByUuid(
 ) {
   const sql = `select form_id from form where uuid='${formUuid}'`;
   let results: any = await CM.query(sql, connection);
-  console.log("encounter with id", results);
   return results.length > 0 ? results[0] : null;
 }

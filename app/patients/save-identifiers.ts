@@ -8,7 +8,7 @@ import { InsertedMap } from "../inserted-map";
 
 const CM = ConnectionManager.getInstance();
 
-export const KenyaEMR_CCC_ID = 3; // TODO map to the right identifier types
+export const KenyaEMR_CCC_ID = 6; // TODO map to the right identifier types
 export const AMR_CCC_ID = 1;
 export const KenyaEMR_National_ID = 8;
 export const AMR_National_ID = 1;
@@ -90,7 +90,7 @@ export async function saveIdentifier(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      identifier_type: 3,
+      identifier_type: 6,
       creator: userMap[identifier.creator],
       changed_by: userMap[identifier.changed_by],
       voided_by: userMap[identifier.voided_by],

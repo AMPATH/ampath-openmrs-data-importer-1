@@ -54,10 +54,9 @@ export async function saveEncounter(
   );
   for (const enc of Object.keys(encounter)) {
     let visitId = null;
-    if (encounter[enc][0].obs.visit_id) {
-      visitId = encounter[enc][0].obs.visit_id;
+    if (encounter[enc][0].visitId) {
+      visitId = encounter[enc][0].visitId;
     }
-    //console.log('encounter', encounter[parseInt(enc, 0)])
     if (enc !== "0") {
       let enc2 = await fetchKemrEncounterById(parseInt(enc, 0), amrsConnection);
       if (userMap) {
@@ -80,7 +79,8 @@ export async function saveEncounter(
       encounter[parseInt(enc, 0)].map((a: any) => {
         obsToInsert.push(a.obs);
       });
-      insertMap.encounters = savedEncounter.insertId;
+      insertMap.encounters[encounter[parseInt(enc, 0)][0].obs.encounter_id] =
+        savedEncounter.insertId;
 
       const savedObs = await savePatientObs(
         obsToInsert,

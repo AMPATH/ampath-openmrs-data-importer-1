@@ -16,6 +16,7 @@ import loadVisitData from "../visits/load-visits-data";
 import loadPatientOrders from "../encounters/load-orders";
 import { fetchProvider } from "../providers/load-provider-data";
 import loadencounters from "../encounters/load-encounters";
+import toInsertSql from "../prepare-insert-sql";
 const CM = ConnectionManager.getInstance();
 
 export async function loadPatientDataByUuid(
@@ -100,8 +101,9 @@ export async function fetchPersonAttributes(
   personId: number,
   connection: Connection
 ) {
-  const sql = `select * from person_attribute where person_id= ${personId}`;
+  const sql = `select * from amrs.person_attribute where person_id= ${personId}`;
   let results: PersonAttribute[] = await CM.query(sql, connection);
+  console.log("Iman", sql, results);
   return results;
 }
 
@@ -127,4 +129,39 @@ export async function fetchPersonAttributeTypes(connection: Connection) {
   const sql = `select * from person_attribute_type`;
   let results: PersonAttributeType[] = await CM.query(sql, connection);
   return results;
+}
+export async function fetchorCreatePersonAttributeTypes(
+  amrsConnection: Connection,
+  emrConnection: Connection,
+  attributeTypeId: any
+) {
+  const sql = `select * from person_attribute_type where person_attribute_type_id =${attributeTypeId}`;
+  let results: PersonAttributeType[] = await CM.query(sql, amrsConnection);
+  if (results.length > 0) {
+    const sql2 = `select * from person_attribute_type where uuid ="${results[0].uuid}"`;
+    let emrAttr: PersonAttributeType[] = await CM.query(sql2, emrConnection);
+
+    console.log("chomune", emrAttr);
+    if (emrAttr.length > 0) {
+      return emrAttr[0].person_attribute_type_id;
+    } else {
+      let attrID = await CM.query(
+        toVisitAttributeInsertStatement(results[0], {}),
+        emrConnection
+      );
+      console.log("MEEEEE", attrID);
+      return attrID.insertId;
+    }
+  }
+}
+export function toVisitAttributeInsertStatement(
+  personAttribute: PersonAttributeType,
+  replaceColumns?: any
+) {
+  return toInsertSql(
+    personAttribute,
+    ["person_attribute_id"],
+    "person_attribute_type",
+    replaceColumns
+  );
 }
