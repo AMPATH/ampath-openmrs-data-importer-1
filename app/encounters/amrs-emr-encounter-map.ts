@@ -1,8 +1,10 @@
 import { Connection } from "mysql";
 import ConceptMapper from "../concept-map";
 import { Obs } from "../tables.types";
-import loadPatientObs, { fetchEncounterVisitFromObs } from "./load-patient-obs";
-let path = require("path");
+import loadPatientObs, {
+  fetchEncounterVisitFromObs,
+  insertMissingConcepts,
+} from "./load-patient-obs";
 
 export default class EncounterObsMapper {
   public constructor() {}
@@ -18,7 +20,7 @@ export default class EncounterObsMapper {
         ConceptMapper.instance,
         connection
       );
-      if (mapper.encounterTypeUuid) {
+      if (mapper?.encounterTypeUuid && mapper.obs?.value_coded !== NaN) {
         mappedObs.push(mapper);
       }
     }
@@ -44,6 +46,7 @@ export default class EncounterObsMapper {
     let mappedEmrConcept: any = d.amrsConceptMap[ob.concept_id];
     //fetch visit for ob
     let encounter = await fetchEncounterVisitFromObs(ob.encounter_id, con);
+
     if (
       mappedEmrConcept &&
       mappedEmrConcept.length > 0 &&
@@ -57,36 +60,52 @@ export default class EncounterObsMapper {
           encounterObs.encounterTypeUuid = "unknown";
           return encounterObs;
         }
-        // allocate the obs to the right kenyaemr encounter
-        ob.concept_id = parseInt(map[0]);
         encounterObs.encounterTypeUuid = map[1];
         encounterObs.encounterTypId = map[3];
         encounterObs.formId = map[2];
         encounterObs.visitId = encounter.visit_id;
-        //encounterObs.encounterId=encounter.encounter_id
-        //encounterObs.visitId = ;
         ob.concept_id = mappedEmrConcept[0];
-        if (ob.value_coded) {
+
+        if (ob.value_coded > 0) {
           let a: any = d.amrsConceptMap[ob.value_coded];
-          if (a) {
-            ob.value_coded = parseInt(a[0]?.toString(), 0);
-          } else {
-            return {};
+
+          if (a && a.length > 0) {
+            if (a[0] > 0) {
+              ob.value_coded = a[0];
+            } else {
+              ob.value_coded = ob.value_coded;
+            }
           }
         }
+        if (ob.value_drug) {
+          // TODO: Fix drug mappings
+          ob.value_drug = 1;
+          let a: any = d.amrsConceptMap[ob.value_drug];
 
+          if (a && a.length > 0) {
+            ob.value_drug = 1;
+          }
+        }
         encounterObs.obs = ob;
       } else {
-        //doesn't exist in kenya emr forms
-        //console.log("Unknown",ob);
+        await this.insertMissingConcepts(ob.concept_id, "Unknown", con);
+        console.log("Unknown", ob);
       }
     } else {
-      // unmapped concepts
-      //console.log("Unmapped",ob);
+      await this.insertMissingConcepts(ob.concept_id, "unMapped", con);
+      console.log("Unmapped", ob);
     }
     return encounterObs;
   }
+  async insertMissingConcepts(
+    ob: number,
+    conceptType: string,
+    con: Connection
+  ) {
+    await insertMissingConcepts(ob, conceptType, con);
+  }
 }
+
 export type EncounterObs = {
   encounterTypeUuid?: string;
   encounterTypId?: string;
@@ -96,5 +115,5 @@ export type EncounterObs = {
   creator?: string;
   changed_by?: string;
   voided_by?: string;
-  obs?: {};
+  obs?: any;
 };

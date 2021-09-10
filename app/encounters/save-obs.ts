@@ -1,9 +1,8 @@
 import ConnectionManager from "../connection-manager";
 import UserMapper from "../users/user-map";
-import ConceptMapper, { AmrsConceptMap } from "../concept-map";
+import ConceptMapper, { AmrsConceptMap, ConceptMap } from "../concept-map";
 import { Connection } from "mysql";
 import { Obs } from "../tables.types";
-import { PatientData } from "../patients/patient-data";
 import toInsertSql from "../prepare-insert-sql";
 import { InsertedMap } from "../inserted-map";
 import { OrderMap } from "./save-orders";
@@ -104,7 +103,7 @@ export function toObsInsertStatement(
     voided_by: userMap[sourceObs.voided_by],
     person_id: newPatientId,
     encounter_id: encounterMap || null,
-    location_id: 5381, //TODO replace with kapenguria location id,
+    location_id: 1604, //TODO replace with kapenguria location id,
     order_id: orderMap[sourceObs.order_id] || null,
     //status: "FINAL",
     obs_group_id: null,
@@ -140,12 +139,12 @@ export function prepareObs(
     let newObs: Obs = Object.assign({}, o);
     // try {
     // TODO, to remove this before moving running in production
-    assertObsConceptsAreMapped(o, conceptMap.amrsConceptMap);
+    assertObsConceptsAreMapped(o, conceptMap.conceptMap);
     if (dataTypeMapping[o.concept_id]) {
       // a map is provided to handle concept and type transformations
       transformObsConcept(dataTypeMapping[o.concept_id], newObs, o);
     } else {
-      mapObsConcept(newObs, o, conceptMap.amrsConceptMap);
+      mapObsConcept(newObs, o, conceptMap.conceptMap);
       mapObsValue(newObs, o, conceptMap.amrsConceptMap);
     }
     // } catch (err) {
@@ -163,7 +162,7 @@ export function prepareObs(
 
 export function assertObsConceptsAreMapped(
   obs: Obs,
-  conceptMap: AmrsConceptMap
+  conceptMap: ConceptMap
 ) {
   if (dataTypeMapping[obs.concept_id]) {
     // explicit map provided
@@ -192,7 +191,7 @@ export function transformObsConcept(
 export function mapObsConcept(
   newObs: Obs,
   sourceObs: Obs,
-  conceptMap: AmrsConceptMap
+  conceptMap: ConceptMap
 ) {
   newObs.concept_id = parseInt(conceptMap[sourceObs.concept_id]?.toString(), 0);
 }
@@ -205,7 +204,7 @@ export function mapObsValue(
   let foundConcept: any = conceptMap[sourceObs.concept_id];
   console.log("Before", foundConcept);
   if (foundConcept && areDatatypeEquivalent(foundConcept[0])) {
-    mapMatchingTypeObsValue(newObs, sourceObs, conceptMap);
+    mapMatchingTypeObsValue(newObs, sourceObs, conceptMap );
   } else {
     //throw new Error("Unresolved conflicting data types detected. Details: ");
   }
@@ -230,9 +229,9 @@ export function transformObsValue(
 ) {
   switch (transformInfo.type) {
     case "coded-coded":
-      if (transformInfo.values[sourceObs.value_coded] === undefined) {
+      if (sourceObs.value_coded.toString() !=="-" && transformInfo.values[sourceObs.value_coded] === undefined) {
         throw new Error(
-          `Unresolved transformation for value ${sourceObs.value_coded}. Details ${transformInfo}`
+          `Unresolved transformation for value ${sourceObs.value_coded}. Details ${transformInfo.values}`
         );
       }
       newObs.value_coded = parseInt(
@@ -240,7 +239,7 @@ export function transformObsValue(
       );
       break;
     case "numeric-coded":
-      if (transformInfo.values[sourceObs.value_numeric || ""] === undefined) {
+      if (sourceObs.value_coded.toString() !=="-" && transformInfo.values[sourceObs.value_numeric || ""] === undefined) {
         throw new Error(
           `Unresolved transformation for value ${sourceObs.value_numeric}. Details ${transformInfo}`
         );
@@ -284,7 +283,7 @@ function mapMatchingTypeObsValue(
 ) {
   if (sourceObs.value_coded) {
     let a: any = conceptMap[sourceObs.value_coded];
-    if (a) {
+    if (a && Number.isInteger(a[0])) {
       newObs.value_coded = parseInt(a[0]?.toString());
     }
   }

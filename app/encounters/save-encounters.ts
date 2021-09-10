@@ -52,6 +52,8 @@ export async function saveEncounter(
     personId,
     amrsConnection
   );
+
+  //Perform enrollment with just one encounter once
   for (const enc of Object.keys(encounter)) {
     let visitId = null;
     if (encounter[enc][0].visitId) {
@@ -60,14 +62,15 @@ export async function saveEncounter(
     if (enc !== "0") {
       let enc2 = await fetchKemrEncounterById(parseInt(enc, 0), amrsConnection);
       if (userMap) {
+        let metadata: any = findDominantEncType(encounter[parseInt(enc, 0)]);
         replaceColumns = {
           creator: userMap[encounter[parseInt(enc, 0)][0].obs.creator],
           changed_by: userMap[encounter[parseInt(enc, 0)][0].obs.changed_by],
           voided_by: userMap[encounter[parseInt(enc, 0)][0].obs.voided_by],
-          encounter_type: encounter[parseInt(enc, 0)][0].encounterTypId,
-          form_id: parseInt(encounter[enc][0].formId, 0),
+          encounter_type: metadata[0],
+          form_id: metadata[1],
           visit_id: insertMap.visits[visitId],
-          location_id: 5381,
+          location_id: 1604,
           patient_id: insertMap.patient,
         };
       }
@@ -144,6 +147,31 @@ export async function saveEncounterProviderData(
       );
     }
   }
+}
+export function findDominantEncType(encounter: any) {
+  var result = encounter.reduce(
+    (acc: { [x: string]: any }, o: { encounterTypId: string | number }) => (
+      (acc[o.encounterTypId] = (acc[o.encounterTypId] || 0) + 1), acc
+    ),
+    {}
+  );
+  var result2 = encounter.reduce(
+    (acc: { [x: string]: any }, o: { formId: string | number }) => (
+      (acc[o.formId] = (acc[o.formId] || 0) + 1), acc
+    ),
+    {}
+  );
+  let arr: Array<number> = Object.values(result);
+  let max = Math.max(...arr);
+
+  let encounterTypeID = Object.keys(result).find((key) => result[key] === max);
+
+  let arr2: Array<number> = Object.values(result2);
+  let max2 = Math.max(...arr2);
+
+  let formID = Object.keys(result2).find((key) => result2[key] === max2);
+
+  return [encounterTypeID, formID];
 }
 export function toEncounterInsertStatement(
   encounter: Encounter,

@@ -1,6 +1,5 @@
 concept_id,Type (Question/Answer),emr_concept_id,Mapped CIEL Concept (in KenyaEMR),amrs_concept_id,AMRS CIEL Mapping
 160430,Reason for visit,160430,160430,10727,160430
-,Vital signs,,,,
 5088,Temp,5088,5088,5088,5088
 5087,Pulse Rate,5087,5087,5087,5087
 5085,BP: Systolic,5085,5085,5085,5085
@@ -9,6 +8,4 @@ concept_id,Type (Question/Answer),emr_concept_id,Mapped CIEL Concept (in KenyaEM
 5092,Oxygen Saturation,5092,5092,5092,5092
 5089,Weight,5089,5089,5089,5089
 5090,Height,5090,5090,5090,5090
-,BMI,,,,
 1343,MUAC,1343,1343,1343,1343
-1427,LMP,1427,1427,1836,1427

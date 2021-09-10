@@ -17,7 +17,7 @@ export default function toInsertSql(
       set[o] = obj[o];
     }
   }
-  const sql = mysql.format(`REPLACE INTO ${table} SET ?`, [set]);
+  const sql = mysql.format(`Replace INTO ${table} SET ?`, [set]);
   console.log("SQL::: ", sql);
   return sql;
 }

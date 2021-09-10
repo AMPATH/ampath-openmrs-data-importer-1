@@ -53,8 +53,11 @@ export async function saveVisit(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
+      creator: 1,
+      changed_by: 1,
+      voided_by: 1,
       patient_id: patientId,
-      location_id: 5381,
+      location_id: 1604,
       visit_type_id: 1,
     };
   }
@@ -80,6 +83,9 @@ export async function saveVisitAttribute(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
+      creator: 1,
+      changed_by: 1,
+      voided_by: 1,
       visit_id: visitId,
     };
   }
@@ -117,7 +123,7 @@ export function toInsertSql(
       set[o] = obj[o];
     }
   }
-  const sql = mysql.format(`REPLACE INTO ${table} SET ?`, [set]);
+  const sql = mysql.format(`Replace INTO ${table} SET ?`, [set]);
   console.log("SQL::: ", sql);
   return sql;
 }

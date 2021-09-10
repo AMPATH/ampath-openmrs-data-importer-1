@@ -8,8 +8,13 @@ import { InsertedMap } from "../inserted-map";
 
 const CM = ConnectionManager.getInstance();
 
-export const KenyaEMR_HIV_Program = 2;
+export const KenyaEMR_HIV_Program = 1;
+export const KenyaEMR_MCH_Program = 2;
 export const AMR_HIV_Program = 1;
+export const AMR_OVC_Program = 2;
+export const AMR_PMTCT_Program = 4;
+export const AMR_DC_Program = 9;
+export const AMR_VIREMIA_Program = 27;
 
 export async function saveProgramEnrolments(
   enrollmentsToInsert: PatientProgram[],
@@ -26,8 +31,26 @@ export async function saveHivEnrolments(
   connection: Connection
 ) {
   for (const p of enrollmentsToInsert) {
-    if (p.program_id === KenyaEMR_HIV_Program) {
-      await saveProgramEnrolment(p, AMR_HIV_Program, insertMap, connection);
+    //TODO: Determine if we should create other AMRS programs a patient was enrolled in on EMR
+    if (
+      p.program_id === AMR_HIV_Program ||
+      p.program_id === AMR_OVC_Program ||
+      p.program_id === AMR_VIREMIA_Program ||
+      p.program_id === AMR_DC_Program
+    ) {
+      await saveProgramEnrolment(
+        p,
+        KenyaEMR_HIV_Program,
+        insertMap,
+        connection
+      );
+    } else if (p.program_id === AMR_PMTCT_Program) {
+      await saveProgramEnrolment(
+        p,
+        KenyaEMR_MCH_Program,
+        insertMap,
+        connection
+      );
     }
   }
 }
@@ -43,10 +66,10 @@ export async function saveProgramEnrolment(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      creator: userMap[enrolment.creator],
-      changed_by: userMap[enrolment.changed_by],
-      voided_by: userMap[enrolment.voided_by],
-      location_id: 5381, //TODO replace with actual location
+      // creator: userMap[enrolment.creator],
+      // changed_by: userMap[enrolment.changed_by],
+      // voided_by: userMap[enrolment.voided_by],
+      location_id: 1604, //TODO replace with actual location
       patient_id: insertMap.patient,
       program_id: programId,
     };

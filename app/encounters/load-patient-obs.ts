@@ -20,3 +20,12 @@ export async function fetchEncounterVisitFromObs(
   let results: Encounter[] = await CM.query(sql, connection);
   return results[0];
 }
+export async function insertMissingConcepts(
+  obsId: number,
+  conceptType:string,
+  connection: Connection
+) {
+  const sql = `insert into missing_concepts set concept_id = ${obsId}, type="${conceptType}"`;
+  let results: any = await CM.query(sql, connection);
+  return results[0];
+}

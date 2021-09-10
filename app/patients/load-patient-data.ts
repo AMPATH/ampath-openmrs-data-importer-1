@@ -101,7 +101,7 @@ export async function fetchPersonAttributes(
   personId: number,
   connection: Connection
 ) {
-  const sql = `select * from amrs.person_attribute where person_id= ${personId}`;
+  const sql = `select * from person_attribute where person_id= ${personId}`;
   let results: PersonAttribute[] = await CM.query(sql, connection);
   console.log("Iman", sql, results);
   return results;

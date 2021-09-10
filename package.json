@@ -4,7 +4,8 @@
   "description": "Used to import data from one openmrs instance to another, where the structure and concepts are different",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && node ./build/app/app.js",
+    "start:create": "tsc && node ./build/app/app.js create",
+    "start:update": "tsc && node ./build/app/app.js update",
     "migrate-users": "tsc && node ./build/app/users/process-user-migration.js",
     "find-recurrent-patients": "tsc && node ./build/app/patient-match/find-recurrent-patient.js",
     "extract:concepts": "node app/process-concepts.js",

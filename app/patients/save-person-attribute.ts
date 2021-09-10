@@ -27,7 +27,7 @@ export async function savePersonAttributes(
       attribute.person_attribute_type_id
     );
     replaceColumns = {
-      location_id: 5381, //TODO replace with actual location
+      location_id: 1604, //TODO replace with actual location
       person_id: insertMap.patient,
       person_attribute_type_id: attributeID,
     };

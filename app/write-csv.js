@@ -8,7 +8,6 @@ module.exports = function (path, header, records) {
     csvWriter
       .writeRecords(records) // returns a promise
       .then(() => {
-        console.log("...Done");
         success();
       })
       .catch((err) => {
