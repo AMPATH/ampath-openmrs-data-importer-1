@@ -15,6 +15,9 @@ import ProviderMapper from "../providers/provider-map";
 import FormMapper from "./form-map";
 import EncounterObsMapper from "./amrs-emr-encounter-map";
 import savePatientObs, { saveObs } from "./save-obs";
+import transferLocationToEmr from "../location/location";
+import { loadPatientARVPlan } from "./load-patient-obs";
+import ConceptMapper, { AmrsConceptMap } from "../concept-map";
 
 const CM = ConnectionManager.getInstance();
 
@@ -50,8 +53,11 @@ export async function saveEncounter(
   let encounterObsMapper = new EncounterObsMapper();
   let encounter: any = await encounterObsMapper.retrieveobs(
     personId,
-    amrsConnection
+    amrsConnection,
+    kemrsConnection,
+    insertMap
   );
+console.log("ALL", encounter);
 
   //Perform enrollment with just one encounter once
   for (const enc of Object.keys(encounter)) {
@@ -65,23 +71,38 @@ export async function saveEncounter(
         let metadata: any = findDominantEncType(encounter[parseInt(enc, 0)]);
         replaceColumns = {
           creator: userMap[encounter[parseInt(enc, 0)][0].obs.creator],
-          changed_by: userMap[encounter[parseInt(enc, 0)][0].obs.changed_by],
+          changed_by: userMap[encounter[parseInt(enc, 0)][0].obs.changed_by] ? userMap[encounter[parseInt(enc, 0)][0].obs.changed_by]:null,
           voided_by: userMap[encounter[parseInt(enc, 0)][0].obs.voided_by],
           encounter_type: metadata[0],
           form_id: metadata[1],
           visit_id: insertMap.visits[visitId],
-          location_id: 1604,
+          location_id: await transferLocationToEmr(encounter[parseInt(enc, 0)][0].locationId),
           patient_id: insertMap.patient,
         };
+        console.log(replaceColumns,enc2[0])
       }
       const savedEncounter = await CM.query(
         toEncounterInsertStatement(enc2[0], replaceColumns),
         kemrsConnection
       );
+      //Insert regeditor obs
+      let ARVObs = await loadPatientARVPlan(parseInt(enc, 0), amrsConnection);
+
       let obsToInsert: Obs[] = [];
       encounter[parseInt(enc, 0)].map((a: any) => {
         obsToInsert.push(a.obs);
       });
+      await ConceptMapper.instance.initialize();
+      let cptMap:ConceptMapper =ConceptMapper.instance;
+      let amrsCptMap:AmrsConceptMap=cptMap.amrsConceptMap;
+      ARVObs.map((b:any)=>{
+        b.value_drug= null;
+        b.value_coded = amrsCptMap[b.value_coded]
+        obsToInsert.push(b);
+
+      })
+
+      console.log("OBS", obsToInsert)
       insertMap.encounters[encounter[parseInt(enc, 0)][0].obs.encounter_id] =
         savedEncounter.insertId;
 

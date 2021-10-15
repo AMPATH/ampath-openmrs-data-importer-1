@@ -150,9 +150,9 @@ export type Obs = {
   accession_number: string;
   value_group_id: number;
   value_boolean: number;
-  value_coded: number;
+  value_coded: any;
   value_coded_name_id: number;
-  value_drug: number;
+  value_drug: any;
   value_datetime: Date;
   value_numeric: number | null;
   value_modifier: string;

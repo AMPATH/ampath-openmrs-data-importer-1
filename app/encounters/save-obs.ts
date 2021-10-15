@@ -8,6 +8,7 @@ import { InsertedMap } from "../inserted-map";
 import { OrderMap } from "./save-orders";
 import * as skipObs from "../../metadata/skip-obs.json";
 import * as DM from "../../metadata/data-type-map.json";
+import transferLocationToEmr from "../location/location";
 const dataTypeMapping: DataTypeTransformMap = DM as DataTypeTransformMap;
 const CM = ConnectionManager.getInstance();
 
@@ -68,7 +69,7 @@ export async function saveObs(
       skippedObsCount++;
       continue;
     }
-    const sql = toObsInsertStatement(
+    const sql = await toObsInsertStatement(
       mappedObs[i],
       sourceObs[i],
       newPatientId,
@@ -85,7 +86,7 @@ export async function saveObs(
   return obsMap;
 }
 
-export function toObsInsertStatement(
+export async function toObsInsertStatement(
   obs: Obs,
   sourceObs: Obs,
   newPatientId: number,
@@ -103,16 +104,17 @@ export function toObsInsertStatement(
     voided_by: userMap[sourceObs.voided_by],
     person_id: newPatientId,
     encounter_id: encounterMap || null,
-    location_id: 1604, //TODO replace with kapenguria location id,
+    location_id: await transferLocationToEmr(sourceObs.location_id), //TODO replace with kapenguria location id,
     order_id: orderMap[sourceObs.order_id] || null,
     //status: "FINAL",
     obs_group_id: null,
     value_coded_name_id: null, //TODO replace with value_coded_name_id
     previous_version: null, //TODO replace with previous_version
+    uuid: uuidv4() //Remove this uuid
   };
   return toInsertSql(
     obs,
-    ["amrs_obs_id", "value_boolean", "status", "interpretation"],
+    ["amrs_obs_id", "value_boolean", "status", "interpretation","obs_id"],
     "obs",
     replaceColumns
   );
@@ -176,6 +178,7 @@ export function assertObsConceptsAreMapped(
     // throw new Error(
     //   "Unmapped value_coded concept detected. Concept ID: " + obs.value_coded
     // );
+    console.log("Unmapped value coded concept detected. Concept ID: " + obs.concept_id);
   }
 }
 
@@ -230,8 +233,9 @@ export function transformObsValue(
   switch (transformInfo.type) {
     case "coded-coded":
       if (sourceObs.value_coded.toString() !=="-" && transformInfo.values[sourceObs.value_coded] === undefined) {
+        console.log(transformInfo.values);
         throw new Error(
-          `Unresolved transformation for value ${sourceObs.value_coded}. Details ${transformInfo.values}`
+          `Unresolved transformation for value coded ${sourceObs.value_coded}. Details ${transformInfo.values}`
         );
       }
       newObs.value_coded = parseInt(
@@ -241,7 +245,7 @@ export function transformObsValue(
     case "numeric-coded":
       if (sourceObs.value_coded.toString() !=="-" && transformInfo.values[sourceObs.value_numeric || ""] === undefined) {
         throw new Error(
-          `Unresolved transformation for value ${sourceObs.value_numeric}. Details ${transformInfo}`
+          `Unresolved transformation for value numeric ${sourceObs.value_numeric}. Details ${transformInfo}`
         );
       }
       newObs.value_coded = parseInt(
@@ -287,4 +291,11 @@ function mapMatchingTypeObsValue(
       newObs.value_coded = parseInt(a[0]?.toString());
     }
   }
+}
+function uuidv4() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }

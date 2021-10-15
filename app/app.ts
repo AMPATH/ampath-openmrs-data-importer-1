@@ -8,16 +8,18 @@ const pathtoError = "metadata/enc prov errors.csv";
 
 console.log("Starting application..");
 
-async function start(action: string) {
+async function start(action: string, start: string, end:string) {
   console.log("ACtion", action);
   const patientIds = await readCSV(patientIdsPath);
   const patients = patientIds.array.map((p: any) => p.patient_id);
   const existingPatientsIds = await readCSV(existingPatientIdsPath);
   let synced = 0;
   let failed = 0;
+  let patientsToTransfer = patients.slice(start, end);
   let encProvErrors = [];
+  console.log(patientsToTransfer, start, end)
   if (action && action === "create") {
-    for (const patient of patients) {
+    for (const patient of patientsToTransfer) {
       console.log("=======start===========");
       let status = await transferPatientToAmrs(patient);
       if (status.synced) {
@@ -59,4 +61,4 @@ async function start(action: string) {
   // await transferPatientToAmrs(22);
 }
 
-start(process.argv[2]);
+start(process.argv[2],process.argv[3],process.argv[4]);

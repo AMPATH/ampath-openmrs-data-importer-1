@@ -12,6 +12,23 @@ export default async function loadPatientObs(
   let results: Obs[] = await CM.query(sql, connection);
   return results;
 }
+export async function loadPatientARVPlan(
+  encounterId: number,
+  connection: Connection
+) {
+  const sql = `select * from obs where encounter_id = ${encounterId} and (concept_id=1255 or concept_id=1088)`;
+  let results: Obs[] = await CM.query(sql, connection);
+  return results;
+}
+export async function checkConceptDrugsaved(
+  ObDate: Date,
+  person_id: number,
+  connection: Connection
+) {
+  const sql = `select * from obs where person_id=${person_id} and date_created = STR_TO_DATE('${ObDate}','yyyy-dd-mm hh:mm:ss') and (concept_id=1088 or concept_id=1255)`;
+  let results: Obs[] = await CM.query(sql, connection);
+  return results;
+}
 export async function fetchEncounterVisitFromObs(
   obsId: number,
   connection: Connection
@@ -25,7 +42,7 @@ export async function insertMissingConcepts(
   conceptType:string,
   connection: Connection
 ) {
-  const sql = `insert into missing_concepts set concept_id = ${obsId}, type="${conceptType}"`;
+  const sql = `replace into missing_concepts set concept_id = ${obsId}, type="${conceptType}"`;
   let results: any = await CM.query(sql, connection);
   return results[0];
 }

@@ -23,4 +23,5 @@ export type InsertedMap = {
   };
   obs: ObsMap;
   orders: OrderMap;
+  regimen:any;
 };

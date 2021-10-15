@@ -8,6 +8,7 @@ import {
   fetchVisitAttribute,
   fetchVisitAttributeByUuid,
 } from "./load-visits-data";
+import transferLocationToEmr from "../location/location";
 const CM = ConnectionManager.getInstance();
 
 export default async function saveVisitData(
@@ -19,20 +20,6 @@ export default async function saveVisitData(
   await UserMapper.instance.initialize();
   // console.log("patient visits", patient.visits);
   for (const visit of patient.visits) {
-    const visitAttribute = await fetchVisitAttribute(visit.visit_id, amrsCon);
-    // console.log("Visit attributes", visitAttribute);
-    if (visitAttribute) {
-      await saveVisitAttribute(
-        visitAttribute,
-        insertMap.visits[visit.visit_id],
-        amrsCon
-      );
-      const savedVisitAttribute = await fetchVisitAttributeByUuid(
-        visit.uuid,
-        kemrCon
-      );
-      console.log("Saved visit attributes", savedVisitAttribute);
-    }
     await saveVisit(
       visit,
       insertMap.patient,
@@ -53,11 +40,11 @@ export async function saveVisit(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      creator: 1,
-      changed_by: 1,
-      voided_by: 1,
+      creator: userMap[visit.creator],
+      changed_by: userMap[visit.creator],
+      voided_by: userMap[visit.creator],
       patient_id: patientId,
-      location_id: 1604,
+      location_id: await transferLocationToEmr(visit.location_id),
       visit_type_id: 1,
     };
   }
@@ -83,9 +70,9 @@ export async function saveVisitAttribute(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      creator: 1,
-      changed_by: 1,
-      voided_by: 1,
+      creator: userMap[visitAttribute.creator],
+      changed_by: userMap[visitAttribute.changed_by],
+      voided_by: userMap[visitAttribute.voided_by],
       visit_id: visitId,
     };
   }
@@ -123,7 +110,7 @@ export function toInsertSql(
       set[o] = obj[o];
     }
   }
-  const sql = mysql.format(`Replace INTO ${table} SET ?`, [set]);
+  const sql = mysql.format(`replace INTO ${table} SET ?`, [set]);
   console.log("SQL::: ", sql);
   return sql;
 }

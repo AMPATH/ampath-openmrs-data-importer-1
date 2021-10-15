@@ -5,6 +5,7 @@ import ConnectionManager from "../connection-manager";
 import UserMapper from "../users/user-map";
 import toInsertSql from "../prepare-insert-sql";
 import { InsertedMap } from "../inserted-map";
+import transferLocationToEmr from "../location/location";
 
 const CM = ConnectionManager.getInstance();
 
@@ -66,10 +67,10 @@ export async function saveProgramEnrolment(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      // creator: userMap[enrolment.creator],
-      // changed_by: userMap[enrolment.changed_by],
-      // voided_by: userMap[enrolment.voided_by],
-      location_id: 1604, //TODO replace with actual location
+      creator: userMap[enrolment.creator],
+      changed_by: userMap[enrolment.changed_by],
+      voided_by: userMap[enrolment.voided_by],
+      location_id: await transferLocationToEmr(enrolment.location_id), //TODO replace with actual location
       patient_id: insertMap.patient,
       program_id: programId,
     };

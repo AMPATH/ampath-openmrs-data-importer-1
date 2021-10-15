@@ -3,6 +3,7 @@ import ConnectionManager from "../connection-manager";
 import { InsertedMap } from "../inserted-map";
 import toInsertSql, { toUpdateSql } from "../prepare-insert-sql";
 import { PersonAttribute } from "../tables.types";
+import UserMapper from "../users/user-map";
 import { fetchorCreatePersonAttributeTypes } from "./load-patient-data";
 import { PatientData } from "./patient-data";
 
@@ -13,6 +14,7 @@ export async function savePersonAttributes(
   AmrsConnection: Connection,
   EmrConnection: Connection
 ) {
+  await UserMapper.instance.initialize();
   for (const attribute of patient.attributes) {
     let replaceColumns = {};
     //Create attribute type if missing
@@ -26,10 +28,13 @@ export async function savePersonAttributes(
       attributeID,
       attribute.person_attribute_type_id
     );
+    let userMap=UserMapper.instance.userMap;
     replaceColumns = {
-      location_id: 1604, //TODO replace with actual location
       person_id: insertMap.patient,
       person_attribute_type_id: attributeID,
+      creator: userMap[attribute.creator],
+      changed_by: userMap[attribute.changed_by],
+      voided_by: userMap[attribute.voided_by],
     };
     await CM.query(
       toPatientAttributeInsertStatement(attribute, replaceColumns),

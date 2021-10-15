@@ -5,6 +5,7 @@ import ConnectionManager from "../connection-manager";
 import UserMapper from "../users/user-map";
 import toInsertSql from "../prepare-insert-sql";
 import { InsertedMap } from "../inserted-map";
+import transferLocationToEmr from "../location/location";
 
 const CM = ConnectionManager.getInstance();
 
@@ -94,7 +95,7 @@ export async function saveIdentifier(
       creator: userMap[identifier.creator],
       changed_by: userMap[identifier.changed_by],
       voided_by: userMap[identifier.voided_by],
-      location_id: 1604, //TODO replace with actual location
+      location_id: await transferLocationToEmr(identifier.location_id), //TODO replace with actual location
       patient_id: insertMap.patient,
     };
   }

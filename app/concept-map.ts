@@ -313,18 +313,7 @@ export default class ConceptMapper {
         }
       }
     );
-    enrollment.array.forEach(
-      (element: { amrs_concept_id: any; emr_concept_id: any }) => {
-        if (element.emr_concept_id) {
-          map[element.emr_concept_id] = [
-            element.emr_concept_id,
-            "de78a6be-bfc5-4634-adc3-5f1a280455cc",
-            "8",
-            "7",
-          ];
-        }
-      }
-    );
+    
     greenCard.array.forEach(
       (element: { amrs_concept_id: any; emr_concept_id: any }) => {
         if (element.emr_concept_id) {
@@ -337,7 +326,6 @@ export default class ConceptMapper {
         }
       }
     );
-    
     art_prep.array.forEach(
       (element: { amrs_concept_id: any; emr_concept_id: any }) => {
         if (element.emr_concept_id) {

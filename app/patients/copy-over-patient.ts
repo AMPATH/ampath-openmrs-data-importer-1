@@ -39,6 +39,7 @@ export default async function transferPatientToAmrs(personId: number) {
       patientIdentifier: {},
       obs: {},
       orders: {},
+      regimen:[],
     };
 
     await savePersonAddress(patient, insertMap, emrcon);
