@@ -49,7 +49,7 @@ function handleAmrsIdentifiers(identifiers: PatientIdentifier[]) {
       case KenyaEMR_National_ID:
         //handleNationalId(newId);
         break;
-
+      // TODO add emr id as part of the transferred identifiers
       case KenyaEMR_ID:
         //handleKenyaEmrId(newId);
         break;
