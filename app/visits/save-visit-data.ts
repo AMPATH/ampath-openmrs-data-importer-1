@@ -110,7 +110,7 @@ export function toInsertSql(
       set[o] = obj[o];
     }
   }
-  const sql = mysql.format(`replace INTO ${table} SET ?`, [set]);
+  const sql = mysql.format(`insert INTO ${table} SET ?`, [set]);
   console.log("SQL::: ", sql);
   return sql;
 }

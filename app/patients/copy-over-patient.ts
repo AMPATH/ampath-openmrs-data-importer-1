@@ -39,7 +39,7 @@ export default async function transferPatientToAmrs(personId: number) {
       patientIdentifier: {},
       obs: {},
       orders: {},
-      regimen:[],
+      regimen: [],
     };
 
     await savePersonAddress(patient, insertMap, emrcon);
@@ -51,27 +51,27 @@ export default async function transferPatientToAmrs(personId: number) {
       emrcon
     );
     await savePersonAttributes(patient, insertMap, amrsEmrCon, emrcon);
-    await saveProgramEnrolments(
-      patient.patientPrograms,
-      patient,
-      insertMap,
-      emrcon
-    );
-    await saveVisitData(patient, insertMap, emrcon, amrsEmrCon);
-    await saveEncounterData(
-      patient.encounter,
-      insertMap,
-      amrsEmrCon,
-      emrcon,
-      personId
-    );
-    await saveProviderData(
-      patient.provider,
-      patient,
-      insertMap,
-      emrcon,
-      amrsEmrCon
-    );
+    // await saveProgramEnrolments(
+    //   patient.patientPrograms,
+    //   patient,
+    //   insertMap,
+    //   emrcon
+    // );
+    // await saveVisitData(patient, insertMap, emrcon, amrsEmrCon);
+    // await saveEncounterData(
+    //   patient.encounter,
+    //   insertMap,
+    //   amrsEmrCon,
+    //   emrcon,
+    //   personId
+    // );
+    // await saveProviderData(
+    //   patient.provider,
+    //   patient,
+    //   insertMap,
+    //   emrcon,
+    //   amrsEmrCon
+    // );
     //await savePatientOrders(patient.orders, patient, insertMap, emrcon);
     // console.log('saved patient',patient, saved, insertMap);
     //await savePatientObs(patient.obs, patient, insertMap, emrcon);
@@ -85,6 +85,6 @@ export default async function transferPatientToAmrs(personId: number) {
     console.error("Error saving patient: " + patient.person.person_id, er);
     await CM.rollbackTransaction(emrcon);
     await CM.releaseConnections(emrcon, amrsEmrCon);
-    return { synced: false, message: er.message };
+    return { synced: false, message: er };
   }
 }

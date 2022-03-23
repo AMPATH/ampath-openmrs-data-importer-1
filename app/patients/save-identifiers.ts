@@ -12,9 +12,10 @@ const CM = ConnectionManager.getInstance();
 export const KenyaEMR_CCC_ID = 6; // TODO map to the right identifier types
 export const AMR_CCC_ID = 1;
 export const KenyaEMR_National_ID = 8;
-export const AMR_National_ID = 1;
-export const KenyaEMR_ID = 2;
-export const AMR_KenyaEMR_ID = 4;
+export const AMRS_National_ID = 5;
+export const KenyaEMR_ID = 5;
+export const AMRS_Universal_ID = 8;
+export const AMR_KenyaEMR_ID = 1;
 export const AMRS_CCC_ID = 28;
 
 export async function savePatientIdentifiers(
@@ -45,19 +46,19 @@ function handleAmrsIdentifiers(identifiers: PatientIdentifier[]) {
       case AMRS_CCC_ID:
         handleCccId(newId);
         break;
-
-      case KenyaEMR_National_ID:
-        //handleNationalId(newId);
+      case AMRS_National_ID:
+        handleNationalId(newId);
         break;
       // TODO add emr id as part of the transferred identifiers
-      case KenyaEMR_ID:
-        //handleKenyaEmrId(newId);
+      case AMRS_Universal_ID:
+        handleKenyaEmrId(newId);
         break;
       default:
         continue;
     }
     formattedKenyaEMRIdentifiers.push(newId);
   }
+  console.log("my identifiers", formattedKenyaEMRIdentifiers);
   return formattedKenyaEMRIdentifiers;
 }
 
@@ -74,7 +75,7 @@ export function toemrCccId(identifier: string): string {
 }
 
 export function handleNationalId(identifier: PatientIdentifier) {
-  identifier.identifier_type = AMR_National_ID;
+  identifier.identifier_type = KenyaEMR_National_ID;
 }
 
 export function handleKenyaEmrId(identifier: PatientIdentifier) {
@@ -91,7 +92,6 @@ export async function saveIdentifier(
   let replaceColumns = {};
   if (userMap) {
     replaceColumns = {
-      identifier_type: 6,
       creator: userMap[identifier.creator],
       changed_by: userMap[identifier.changed_by],
       voided_by: userMap[identifier.voided_by],

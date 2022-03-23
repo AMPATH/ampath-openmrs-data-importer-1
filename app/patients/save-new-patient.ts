@@ -29,7 +29,7 @@ export async function savePerson(
       voided_by: userMap[patient.person.voided_by],
     };
   }
-  await CM.query("SET FOREIGN_KEY_CHECKS = 0", connection);
+  //await CM.query("SET FOREIGN_KEY_CHECKS = 0", connection);
   await CM.query(
     toPersonInsertStatement(patient.person, replaceColumns),
     connection
@@ -87,7 +87,10 @@ export async function savePersonAddress(
       voided_by: userMap[patient.address.voided_by],
       person_id: insertMap.patient,
       address1: patient.address.county_district, //County
+      city_village: patient.address.city_village, //County
       address2: patient.address.address2, //Landmark
+      address3: patient.address.address3, //Landmark
+      address4: patient.address.address4, //Landmark
       address6: patient.address.address6, //Location,
       address5: patient.address.address5, //Sub Location,
     };
