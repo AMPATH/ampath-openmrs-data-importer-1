@@ -27,6 +27,16 @@ export async function fetchEncounter(
   // console.log('encounters with uuid', results);
   return results;
 }
+export async function updateEncounterVisit(
+  visitID: number,
+  encounterID:number,
+  connection: Connection
+) {
+  const sql = `update encounter set visit_id= ${visitID} where encounter_id=${encounterID}`;
+  let results: Encounter[] = await CM.query(sql, connection);
+  // console.log('encounters with uuid', results);
+  return results;
+}
 export async function fetchEncounterType(
   encounterTypeId: number,
   connection: Connection

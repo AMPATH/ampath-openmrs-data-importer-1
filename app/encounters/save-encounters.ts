@@ -26,7 +26,8 @@ export default async function saveEncounterData(
   insertMap: InsertedMap,
   amrsconnection: Connection,
   kemrConnection: Connection,
-  personId: number
+  personId: number,
+  encounterType:number,
 ) {
   //Todo add form mapper
   await UserMapper.instance.initialize();
@@ -37,6 +38,7 @@ export default async function saveEncounterData(
     amrsconnection,
     insertMap,
     personId,
+    encounterType,
     UserMapper.instance.userMap
   );
 }
@@ -46,7 +48,9 @@ export async function saveEncounter(
   amrsConnection: Connection,
   insertMap: InsertedMap,
   personId: number,
+  encounterType:number,
   userMap?: any
+  
 ) {
   let replaceColumns = {};
   // Map encounter to respective kenyaemr encounters and forms
@@ -55,9 +59,10 @@ export async function saveEncounter(
     personId,
     amrsConnection,
     kemrsConnection,
-    insertMap
+    insertMap,
+    encounterType
   );
-console.log("ALL", encounter);
+//console.log("ALL", encounter);
 
   //Perform enrollment with just one encounter once
   for (const enc of Object.keys(encounter)) {
@@ -75,7 +80,7 @@ console.log("ALL", encounter);
           voided_by: userMap[encounter[parseInt(enc, 0)][0].obs.voided_by],
           encounter_type: metadata[0],
           form_id: metadata[1],
-          visit_id: insertMap.visits[visitId],
+          visit_id: null,
           location_id: await transferLocationToEmr(encounter[parseInt(enc, 0)][0].locationId),
           patient_id: insertMap.patient,
         };
@@ -97,12 +102,14 @@ console.log("ALL", encounter);
       let amrsCptMap:AmrsConceptMap=cptMap.amrsConceptMap;
       ARVObs.map((b:any)=>{
         b.value_drug= null;
-        b.value_coded = amrsCptMap[b.value_coded]
+        
+          b.value_coded = amrsCptMap[b.value_coded]
+       
         obsToInsert.push(b);
 
       })
 
-      console.log("OBS", obsToInsert)
+      //console.log("OBS", obsToInsert)
       insertMap.encounters[encounter[parseInt(enc, 0)][0].obs.encounter_id] =
         savedEncounter.insertId;
 

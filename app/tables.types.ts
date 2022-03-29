@@ -172,21 +172,21 @@ export type Obs = {
   interpretation: number;
 };
 export type Visit = {
-  visit_id: number;
+  visit_id?: number;
   patient_id: number;
   visit_type_id: number;
   date_started: Date;
-  date_stopped: Date;
-  indication_concept_id: number;
+  date_stopped?: Date;
+  indication_concept_id?: number;
   location_id: number;
   creator: number;
   date_created: Date;
-  changed_by: number;
-  date_changed: Date;
+  changed_by?: number;
+  date_changed?: Date;
   voided: number;
-  voided_by: number;
-  date_voided: Date;
-  void_reason: string;
+  voided_by?: number;
+  date_voided?: Date;
+  void_reason?: string;
   uuid: string;
 };
 

@@ -15,7 +15,10 @@ export const KenyaEMR_National_ID = 8;
 export const AMRS_National_ID = 5;
 export const KenyaEMR_ID = 5;
 export const AMRS_Universal_ID = 8;
-export const AMR_KenyaEMR_ID = 1;
+export const OLD_AMRS_Universal_ID = 1;
+export const AMRS_Universal_ID_NEW = 3;
+//export const AMR_KenyaEMR_ID = 1;
+export const AMR_KenyaEMR_ID = 3;
 export const AMRS_CCC_ID = 28;
 
 export async function savePatientIdentifiers(
@@ -53,6 +56,12 @@ function handleAmrsIdentifiers(identifiers: PatientIdentifier[]) {
       case AMRS_Universal_ID:
         handleKenyaEmrId(newId);
         break;
+      case OLD_AMRS_Universal_ID:
+          handleKenyaEmrId(newId);
+          break;
+      case AMRS_Universal_ID_NEW:
+          handleOLDKenyaEmrId(newId);
+          break;
       default:
         continue;
     }
@@ -80,6 +89,9 @@ export function handleNationalId(identifier: PatientIdentifier) {
 
 export function handleKenyaEmrId(identifier: PatientIdentifier) {
   identifier.identifier_type = AMR_KenyaEMR_ID;
+}
+export function handleOLDKenyaEmrId(identifier: PatientIdentifier) {
+  identifier.identifier_type = 1;
 }
 
 export async function saveIdentifier(

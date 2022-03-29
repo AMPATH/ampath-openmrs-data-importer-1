@@ -24,7 +24,9 @@ export default async function transferPatientToAmrs(personId: number) {
   await CM.commitTransaction(amrsEmrCon);
   let emrcon = await CM.getConnectionKenyaemr();
   emrcon = await CM.startTransaction(emrcon);
+  if(patient.person.dead ==0){
   try {
+    
     let saved = { person: patient.person };
 
     await savePatientData(patient, emrcon);
@@ -43,6 +45,7 @@ export default async function transferPatientToAmrs(personId: number) {
     };
 
     await savePersonAddress(patient, insertMap, emrcon);
+    //Remove special characters from names;
     await savePersonName(patient, insertMap, emrcon);
     await savePatientIdentifiers(
       patient.identifiers,
@@ -51,32 +54,48 @@ export default async function transferPatientToAmrs(personId: number) {
       emrcon
     );
     await savePersonAttributes(patient, insertMap, amrsEmrCon, emrcon);
-    // await saveProgramEnrolments(
-    //   patient.patientPrograms,
-    //   patient,
-    //   insertMap,
-    //   emrcon
-    // );
-    // await saveVisitData(patient, insertMap, emrcon, amrsEmrCon);
-    // await saveEncounterData(
-    //   patient.encounter,
-    //   insertMap,
-    //   amrsEmrCon,
-    //   emrcon,
-    //   personId
-    // );
-    // await saveProviderData(
-    //   patient.provider,
-    //   patient,
-    //   insertMap,
-    //   emrcon,
-    //   amrsEmrCon
-    // );
-    //await savePatientOrders(patient.orders, patient, insertMap, emrcon);
-    // console.log('saved patient',patient, saved, insertMap);
-    //await savePatientObs(patient.obs, patient, insertMap, emrcon);
-    //saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
+    await saveProgramEnrolments(
+      patient.patientPrograms,
+      patient,
+      insertMap,
+      emrcon
+    );
 
+    // TODO Create visits for all encounters and backdate to 3 hrs.
+
+    //await saveVisitData(patient, insertMap, emrcon, emrcon);
+    //Saves enrollment  encounter type
+    await saveEncounterData(
+      patient.encounter,
+      insertMap,
+      amrsEmrCon,
+      emrcon,
+      personId,
+      1
+      
+    );
+    //Saves other encounters
+    await saveEncounterData(
+      patient.encounter,
+      insertMap,
+      amrsEmrCon,
+      emrcon,
+      personId,
+      2,
+    );
+    await saveVisitData(emrcon,saved.person.person_id);
+    await saveProviderData(
+      patient.provider,
+      patient,
+      insertMap,
+      emrcon,
+      amrsEmrCon
+    );
+    //await savePatientOrders(patient.orders, patient, insertMap, emrcon);
+    //console.log('saved patient',patient, saved, insertMap);
+    //await savePatientObs(patient.obs, patient, insertMap, emrcon);
+    saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
+   
     // console.log('saved patient', saved.obs.find((obs)=> obs.obs_id === insertMap.obs[649729]));
     await CM.commitTransaction(emrcon);
     await CM.releaseConnections(emrcon, amrsEmrCon);
@@ -87,4 +106,6 @@ export default async function transferPatientToAmrs(personId: number) {
     await CM.releaseConnections(emrcon, amrsEmrCon);
     return { synced: false, message: er };
   }
+}
+return { synced: false, message: 'Patient dead' };
 }

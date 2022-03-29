@@ -171,6 +171,9 @@ export async function savePersonName(
   if (userMap) {
     for (const name of patient.names) {
       replaceColumns = {
+        given_name:name.given_name?.replace(/[^a-zA-Z ]/g, ""),
+        family_name:name.family_name?.replace(/[^a-zA-Z ]/g, ""),
+        middle_name:name.middle_name?.replace(/[^a-zA-Z ]/g, ""),
         creator: userMap[name.creator],
         changed_by: userMap[name.changed_by],
         voided_by: userMap[name.voided_by],

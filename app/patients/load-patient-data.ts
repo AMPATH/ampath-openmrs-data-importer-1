@@ -37,7 +37,7 @@ export default async function loadPatientData(
   let names = await fetchPersonNames(patientId, connection);
   let attributes = await fetchPersonAttributes(patientId, connection);
   let identifiers = await fetchPersonIdentifiers(patientId, connection);
-  let obs = await loadPatientObs(patientId, connection);
+  let obs = [{}];
   let visits = await loadVisitData(patientId, connection);
   let orders = await loadPatientOrders(patientId, connection);
   let provider = await fetchProvider(patientId, connection);
@@ -51,7 +51,6 @@ export default async function loadPatientData(
     attributes: attributes,
     identifiers: identifiers,
     patientPrograms: patientPrograms,
-    obs: obs,
     orders: orders,
     visits: visits,
     provider: provider,

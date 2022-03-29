@@ -9,6 +9,7 @@ import loadPatientObs, {
   checkConceptDrugsaved,
   fetchEncounterVisitFromObs,
   insertMissingConcepts,
+  loadEnrolementPatientObs,
   loadPatientARVPlan,
 } from "./load-patient-obs";
 import ConnectionManager from "../connection-manager";
@@ -23,10 +24,17 @@ export default class EncounterObsMapper {
     patientId: number,
     connection: Connection,
     emrConn: Connection,
-    insertMap: InsertedMap
+    insertMap: InsertedMap,
+    encounterType:number
   ) {
     await ConceptMapper.instance.initialize();
-    let obss = await loadPatientObs(patientId, connection);
+    let obss:Obs[] = []
+    if(encounterType == 1){
+      obss = await loadEnrolementPatientObs(patientId, connection);
+    }else{
+      obss = await loadPatientObs(patientId, connection);
+    }
+    
     let mappedObs: any = [];
     for (let i = 0; i < obss.length; i++) {
       const element = obss[i];
@@ -228,7 +236,7 @@ export default class EncounterObsMapper {
     conceptType: string,
     con: Connection
   ) {
-    await insertMissingConcepts(ob, conceptType, con);
+   //(ob, conceptType, con);
   }
 }
 export async function createDrugRegimenEncounter(

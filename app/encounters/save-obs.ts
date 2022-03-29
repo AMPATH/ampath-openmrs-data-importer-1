@@ -63,7 +63,10 @@ export async function saveObs(
   let obsMap: ObsMap = {};
   let skippedObsCount = 0;
   for (var i = 0; i < mappedObs.length; i++) {
-    if (mappedObs[i].comments === "invalid") {
+    //Check if the concept id or value_coded exist
+   let concept_id:any = await CM.query(`Select concept_id from concept where concept_id=${mappedObs[i].concept_id}`, connection);
+   let value_coded:any = await CM.query(`Select concept_id from concept where concept_id=${mappedObs[i].value_coded}`, connection);
+    if (mappedObs[i].comments === "invalid" || mappedObs[i].concept_id==1067 || concept_id[0]?.concept_id===undefined || value_coded[0]?.concept_id===undefined) {
       // skip it
       console.warn("skipping obs for concept: ", sourceObs[i].concept_id);
       skippedObsCount++;
@@ -141,7 +144,7 @@ export function prepareObs(
     let newObs: Obs = Object.assign({}, o);
     // try {
     // TODO, to remove this before moving running in production
-    assertObsConceptsAreMapped(o, conceptMap.conceptMap);
+    //assertObsConceptsAreMapped(o, conceptMap.conceptMap);
     if (dataTypeMapping[o.concept_id]) {
       // a map is provided to handle concept and type transformations
       transformObsConcept(dataTypeMapping[o.concept_id], newObs, o);
@@ -196,7 +199,11 @@ export function mapObsConcept(
   sourceObs: Obs,
   conceptMap: ConceptMap
 ) {
-  newObs.concept_id = parseInt(conceptMap[sourceObs.concept_id]?.toString(), 0);
+  if(conceptMap[sourceObs.concept_id]!==undefined){
+    newObs.concept_id = parseInt(conceptMap[sourceObs.concept_id]?.toString(), 0);
+  }else{
+    newObs.concept_id = 1067;
+  }
 }
 
 export function mapObsValue(
@@ -287,12 +294,13 @@ function mapMatchingTypeObsValue(
 ) {
   if (sourceObs.value_coded) {
     let a: any = conceptMap[sourceObs.value_coded];
+    console.log("Kalina", a,sourceObs.value_coded)
     if (a && Number.isInteger(a[0])) {
       newObs.value_coded = parseInt(a[0]?.toString());
     }
   }
 }
-function uuidv4() {
+export function uuidv4() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
     var r = (Math.random() * 16) | 0,
       v = c == "x" ? r : (r & 0x3) | 0x8;
