@@ -19,13 +19,14 @@ export default async function loadPatientObs(
 ) {
   const maxDate = `select max(encounter_datetime) as date from encounter where patient_id=${personId}`;
 
-  let date: any= await CM.query(maxDate, connection);  
-  console.log("aye", date)
-  const sql = `SELECT o.* FROM     obs o         JOIN     encounter e ON e.encounter_id = o.encounter_id WHERE     o.person_id = ${personId} AND o.voided = 0         AND e.encounter_type  not IN (1 , 32, 3, 73, 105) AND (e.encounter_datetime >= "${moment(date[0].date).format("YYYY-MM-DD")}" - INTERVAL 2 year)  ORDER BY o.obs_group_id ASC`;
+  let date: any = await CM.query(maxDate, connection);
+  console.log("aye", date);
+  const sql = `SELECT o.* FROM     obs o         JOIN     encounter e ON e.encounter_id = o.encounter_id WHERE     o.person_id = ${personId} AND o.voided = 0         AND e.encounter_type  not IN (1 , 32, 3, 73, 105,208,69) AND (e.encounter_datetime >= "${moment(
+    date[0].date
+  ).format("YYYY-MM-DD")}" - INTERVAL 2 year)  ORDER BY o.obs_group_id ASC`;
   let results: Obs[] = await CM.query(sql, connection);
-  console.log("Obs for 2 yrs",sql, results)
+  console.log("Obs for 2 yrs", sql, results);
   return results;
- 
 }
 export async function loadPatientARVPlan(
   encounterId: number,

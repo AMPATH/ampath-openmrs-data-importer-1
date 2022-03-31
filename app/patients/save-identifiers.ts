@@ -11,6 +11,8 @@ const CM = ConnectionManager.getInstance();
 
 export const KenyaEMR_CCC_ID = 6; // TODO map to the right identifier types
 export const AMR_CCC_ID = 1;
+export const AMR_HEI_ID = 38;
+export const EMR_HEI_ID = 7;
 export const KenyaEMR_National_ID = 8;
 export const AMRS_National_ID = 5;
 export const KenyaEMR_ID = 5;
@@ -57,11 +59,14 @@ function handleAmrsIdentifiers(identifiers: PatientIdentifier[]) {
         handleKenyaEmrId(newId);
         break;
       case OLD_AMRS_Universal_ID:
-          handleKenyaEmrId(newId);
-          break;
+        handleKenyaEmrId(newId);
+        break;
       case AMRS_Universal_ID_NEW:
-          handleOLDKenyaEmrId(newId);
-          break;
+        handleOLDKenyaEmrId(newId);
+        break;
+      case AMR_HEI_ID:
+        handleHEIId(newId);
+        break;
       default:
         continue;
     }
@@ -92,6 +97,9 @@ export function handleKenyaEmrId(identifier: PatientIdentifier) {
 }
 export function handleOLDKenyaEmrId(identifier: PatientIdentifier) {
   identifier.identifier_type = 1;
+}
+export function handleHEIId(identifier: PatientIdentifier) {
+  identifier.identifier_type = 7;
 }
 
 export async function saveIdentifier(

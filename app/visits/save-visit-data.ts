@@ -23,7 +23,7 @@ export default async function saveVisitData(
 ) {
   // Retrieve all patient encounters and group by date.
   let encounters = await loadencounters(patient_id, kemrCon);
-  
+
   const groups = encounters.reduce(
     (groups: any, item) => ({
       ...groups,
@@ -34,7 +34,7 @@ export default async function saveVisitData(
     }),
     {}
   );
-  console.log("HERE",groups);
+  console.log("HERE", groups);
   let groupedEncounters = Object.keys(groups);
   for (let index = 0; index < groupedEncounters.length; index++) {
     const element: any = groupedEncounters[index];
@@ -61,17 +61,17 @@ export default async function saveVisitData(
     };
 
     const results = await CM.query(toVisitInsertStatement(visit, {}), kemrCon);
-    console.log("Insert ID", results.insertId,groups[element]);
+    console.log("Insert ID", results.insertId, groups[element]);
     let visitID = results.insertId;
 
     // Update encounter visits
-    for (let index = 0; index <= groups[element]; index++) {
+    for (let index = 0; index <= groups[element].length; index++) {
       const encounter = groups[element][index];
       if (encounter) {
-        console.log("Oya",visitID, groups[element]);
+        console.log("Oya", visitID, groups[element]);
         let a = await updateEncounterVisit(visitID, encounter, kemrCon);
 
-        console.log("Oya answet",a);
+        console.log("Oya answet", a);
       }
     }
   }
