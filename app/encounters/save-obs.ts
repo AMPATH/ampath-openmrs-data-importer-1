@@ -67,24 +67,23 @@ export async function saveObs(
   for (var i = 0; i < mappedObs.length; i++) {
     //Check if the concept id or value_coded exist
     if (
-      mappedObs[i].value_coded !== null &&
-      mappedObs[i].value_coded?.toString() !== "-"
+      mappedObs[i].value_coded != null ||
+      mappedObs[i].value_coded != undefined
     ) {
       value_coded = await CM.query(
         `Select concept_id from concept where concept_id=${mappedObs[i].value_coded}`,
         connection
       );
       if (!value_coded[0]?.concept_id) {
+        console.log("Opeeee", value_coded, mappedObs[i].value_coded);
         mappedObs[i].value_coded = 1067;
       }
-    } else if (mappedObs[i].value_coded?.toString() === "-") {
-      mappedObs[i].value_coded = 1067;
     }
     concept_id = await CM.query(
       `Select concept_id from concept where concept_id=${mappedObs[i].concept_id}`,
       connection
     );
-
+    console.log("checking", concept_id, mappedObs[i]);
     if (concept_id[0]?.concept_id < 0) {
       console.log(
         "Concept id",
@@ -182,7 +181,7 @@ export function prepareObs(
       // a map is provided to handle concept and type transformations
       transformObsConcept(dataTypeMapping[o.concept_id], newObs, o);
     } else {
-      mapObsConcept(newObs, o, conceptMap.conceptMap);
+      mapObsConcept(newObs, o, conceptMap.amrsConceptMap);
       mapObsValue(newObs, o, conceptMap.amrsConceptMap);
     }
     // } catch (err) {
@@ -229,13 +228,16 @@ export function transformObsConcept(
 export function mapObsConcept(
   newObs: Obs,
   sourceObs: Obs,
-  conceptMap: ConceptMap
+  conceptMap: AmrsConceptMap
 ) {
+  //console.log("Mapping", sourceObs,conceptMap[sourceObs.concept_id])
   if (conceptMap[sourceObs.concept_id] !== undefined) {
     newObs.concept_id = parseInt(
       conceptMap[sourceObs.concept_id]?.toString(),
       0
     );
+  } else {
+    console.log("sijaona hii", sourceObs.concept_id);
   }
 }
 

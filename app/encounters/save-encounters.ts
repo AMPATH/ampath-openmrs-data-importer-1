@@ -27,7 +27,7 @@ export default async function saveEncounterData(
   amrsconnection: Connection,
   kemrConnection: Connection,
   personId: number,
-  encounterType:number,
+  encounterType: number
 ) {
   //Todo add form mapper
   await UserMapper.instance.initialize();
@@ -48,9 +48,8 @@ export async function saveEncounter(
   amrsConnection: Connection,
   insertMap: InsertedMap,
   personId: number,
-  encounterType:number,
+  encounterType: number,
   userMap?: any
-  
 ) {
   let replaceColumns = {};
   // Map encounter to respective kenyaemr encounters and forms
@@ -62,7 +61,7 @@ export async function saveEncounter(
     insertMap,
     encounterType
   );
-//console.log("ALL", encounter);
+  //console.log("ALL", encounter);
 
   //Perform enrollment with just one encounter once
   for (const enc of Object.keys(encounter)) {
@@ -76,40 +75,29 @@ export async function saveEncounter(
         let metadata: any = findDominantEncType(encounter[parseInt(enc, 0)]);
         replaceColumns = {
           creator: userMap[encounter[parseInt(enc, 0)][0].obs.creator],
-          changed_by: userMap[encounter[parseInt(enc, 0)][0].obs.changed_by] ? userMap[encounter[parseInt(enc, 0)][0].obs.changed_by]:null,
+          changed_by: userMap[encounter[parseInt(enc, 0)][0].obs.changed_by]
+            ? userMap[encounter[parseInt(enc, 0)][0].obs.changed_by]
+            : null,
           voided_by: userMap[encounter[parseInt(enc, 0)][0].obs.voided_by],
           encounter_type: metadata[0],
           form_id: metadata[1],
           visit_id: null,
-          location_id: await transferLocationToEmr(encounter[parseInt(enc, 0)][0].locationId),
+          location_id: await transferLocationToEmr(
+            encounter[parseInt(enc, 0)][0].locationId
+          ),
           patient_id: insertMap.patient,
         };
-        console.log(replaceColumns,enc2[0])
+        console.log(replaceColumns, enc2[0]);
       }
       const savedEncounter = await CM.query(
         toEncounterInsertStatement(enc2[0], replaceColumns),
         kemrsConnection
       );
-      //Insert regeditor obs
-      let ARVObs = await loadPatientARVPlan(parseInt(enc, 0), amrsConnection);
 
       let obsToInsert: Obs[] = [];
       encounter[parseInt(enc, 0)].map((a: any) => {
         obsToInsert.push(a.obs);
       });
-      await ConceptMapper.instance.initialize();
-      let cptMap:ConceptMapper =ConceptMapper.instance;
-      let amrsCptMap:AmrsConceptMap=cptMap.amrsConceptMap;
-      ARVObs.map((b:any)=>{
-        b.value_drug= null;
-        
-          b.value_coded = amrsCptMap[b.value_coded]
-       
-        obsToInsert.push(b);
-
-      })
-
-      //console.log("OBS", obsToInsert)
       insertMap.encounters[encounter[parseInt(enc, 0)][0].obs.encounter_id] =
         savedEncounter.insertId;
 

@@ -10,11 +10,14 @@ import transferLocationToEmr from "../location/location";
 const CM = ConnectionManager.getInstance();
 
 export const KenyaEMR_HIV_Program = 1;
-export const KenyaEMR_MCH_Program = 2;
+export const KenyaEMR_MCH_Program = 3;
+export const KenyaEMR_HEI_MCH_Program = 2;
 export const AMR_HIV_Program = 1;
 export const AMR_OVC_Program = 2;
+export const EMR_OVC_Program = 7;
 export const AMR_PMTCT_Program = 4;
 export const AMR_DC_Program = 9;
+export const AMR_HEI_Program = 29;
 export const AMR_VIREMIA_Program = 27;
 
 export async function saveProgramEnrolments(
@@ -35,7 +38,6 @@ export async function saveHivEnrolments(
     //TODO: Determine if we should create other AMRS programs a patient was enrolled in on EMR
     if (
       p.program_id === AMR_HIV_Program ||
-      p.program_id === AMR_OVC_Program ||
       p.program_id === AMR_VIREMIA_Program ||
       p.program_id === AMR_DC_Program
     ) {
@@ -52,6 +54,15 @@ export async function saveHivEnrolments(
         insertMap,
         connection
       );
+    } else if (p.program_id === AMR_HEI_Program) {
+      await saveProgramEnrolment(
+        p,
+        KenyaEMR_HEI_MCH_Program,
+        insertMap,
+        connection
+      );
+    } else if (p.program_id === AMR_OVC_Program) {
+      await saveProgramEnrolment(p, EMR_OVC_Program, insertMap, connection);
     }
   }
 }

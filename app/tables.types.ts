@@ -146,14 +146,14 @@ export type Obs = {
   order_id: number;
   obs_datetime: Date;
   location_id: number;
-  obs_group_id: number;
+  obs_group_id?: number;
   accession_number: string;
   value_group_id: number;
   value_boolean: number;
   value_coded: any;
   value_coded_name_id: number;
   value_drug: any;
-  value_datetime: Date;
+  value_datetime: any;
   value_numeric: number | null;
   value_modifier: string;
   value_text: string;
@@ -162,8 +162,8 @@ export type Obs = {
   creator: number;
   date_created: Date;
   voided: number;
-  voided_by: number;
-  date_voided: Date;
+  voided_by?: any;
+  date_voided?: Date;
   void_reason: string;
   uuid: string;
   form_namespace_and_path: number;
@@ -269,11 +269,11 @@ export type Encounter = {
   date_created: Date;
   voided: number;
   voided_by: number;
-  date_voided: Date;
+  date_voided?: Date;
   void_reason: string;
   changed_by: number;
-  date_changed: Date;
-  visit_id: number;
+  date_changed?: Date;
+  visit_id: any;
   uuid: string;
 };
 export type EncounterProvider = {

@@ -7,8 +7,12 @@ import { Encounter, Obs } from "../tables.types";
 import userMap from "../users/user-map";
 import loadPatientObs, {
   checkConceptDrugsaved,
+  cleanRegimenEncountersObs,
   fetchEncounterVisitFromObs,
+  fetchRegimenEncountersObs,
+  getPreviousRegimenEncounter,
   insertMissingConcepts,
+  LoadCurrentHivSummary,
   loadEnrolementPatientObs,
   loadPatientARVPlan,
 } from "./load-patient-obs";
@@ -16,6 +20,9 @@ import ConnectionManager from "../connection-manager";
 import savePatientObs from "./save-obs";
 import transferLocationToEmr from "../location/location";
 import UserMapper from "../users/user-map";
+import { saveEncounter } from "./save-encounters";
+import { getEncounterUUIDByID } from "./load-orders";
+import moment from "moment";
 const CM = ConnectionManager.getInstance();
 export default class EncounterObsMapper {
   public constructor() {}
@@ -25,16 +32,18 @@ export default class EncounterObsMapper {
     connection: Connection,
     emrConn: Connection,
     insertMap: InsertedMap,
-    encounterType:number
+    encounterType: number
   ) {
     await ConceptMapper.instance.initialize();
-    let obss:Obs[] = []
-    if(encounterType == 1){
+    let obss: Obs[] = [];
+    if (encounterType == 1) {
+      console.log("Processing Enrollment Obs");
       obss = await loadEnrolementPatientObs(patientId, connection);
-    }else{
+    } else {
+      console.log("Processing other Obs");
       obss = await loadPatientObs(patientId, connection);
     }
-    
+
     let mappedObs: any = [];
     for (let i = 0; i < obss.length; i++) {
       const element = obss[i];
@@ -87,9 +96,6 @@ export default class EncounterObsMapper {
     ) {
       let map = d.conceptMap[parseInt(mappedEmrConcept[0], 0)];
       if (map) {
-        if (ob.concept_id === 1255 || ob.concept_id === 1772) {
-          return {};
-        }
         if (ob.encounter_id === null) {
           ob.encounter_id = 0;
           encounterObs.obs = ob;
@@ -122,123 +128,343 @@ export default class EncounterObsMapper {
           }
         }
         //If started on ART Create enrollment encounter
-
-        if (ob.value_drug || ob.concept_id == 1088) {
-          //ob.value_drug = 1;
-          let a: any = await transferDrugToEmr(ob.value_drug);
-          if ((a && a > 0) || ob.concept_id == 1088) {
-            let ARVObs = await loadPatientARVPlan(ob.encounter_id, con);
-            const userMap = UserMapper.instance.userMap;
-            let drugRegimenEncounter: Encounter = encounter;
-            let replaceColumns = {
-              creator: userMap[encounter.creator],
-              changed_by: userMap[encounter.changed_by],
-              voided_by: userMap[encounter.voided_by],
-              encounter_type: 29,
-              form_id: 49,
-              location_id: await transferLocationToEmr(encounter.location_id),
-              patient_id: insertmap.patient,
-              visit_id: null,
-              uuid: uuidv4(),
-            };
-
-            //Add Regimen Plan observation
-            let regEditor: Obs[] = [];
-            let checkConceptDrug = await checkConceptDrugsaved(
-              ob.obs_datetime,
-              insertmap.patient,
-              emrConn
-            );
-            if (!insertmap.regimen.includes(ob.encounter_id)) {
-              //regEditor.push(ob);
-              console.log(
-                "Encounter",
-                ob.encounter_id,
-                insertmap.regimen.includes(ob.encounter_id),
-                insertmap.regimen
-              );
-              const savedEncounter = await createDrugRegimenEncounter(
-                replaceColumns,
-                drugRegimenEncounter,
-                emrConn
-              );
-
-              ARVObs.forEach(async (element) => {
-                element.encounter_id = savedEncounter.insertId;
-                console.log(
-                  "Regimen Editor",
-                  element,
-                  d.amrsConceptMap[element.value_coded]
-                );
-                let drugMap = await transferDrugToEmr(element.value_drug);
-                let conceptDrug: any = d.amrsConceptMap[element.value_coded];
-                if (element.concept_id !== 1255) {
-                  insertmap.regimen.push(ob.encounter_id);
-                  element.concept_id = mappedEmrConcept[0];
-                  element.value_coded =
-                    drugMap !== null ? drugMap : conceptDrug[0];
-                  element.value_drug = null;
-                }
-
-                regEditor.push(element);
-              });
-
-              await savePatientObs(
-                regEditor,
-                insertmap,
-                emrConn,
-                savedEncounter.insertId
-              );
-            } else {
-              console.log(
-                "Encounter",
-                checkConceptDrug.length,
-                checkConceptDrug
-              );
-              return;
-            }
-
-            return {};
-          } else {
-            ob.value_drug = null;
-            await this.insertMissingConcepts(ob.value_drug, "Drug", con);
-          }
-        }
-        encounterObs.obs = ob;
-      } else {
-        encounterObs.visitId = null;
-        encounterObs.locationId = null;
-        let enrollment: number[] = [1, 32, 3, 73, 105];
-        if (encounter && enrollment.includes(encounter.encounter_type)) {
-          encounterObs.encounterTypeUuid =
-            "de78a6be-bfc5-4634-adc3-5f1a280455cc";
-          encounterObs.encounterTypId = "7";
-          encounterObs.formId = "8";
-        } else {
-          encounterObs.encounterTypeUuid =
-            "a0034eee-1940-4e35-847f-97537a35d05e";
-          encounterObs.encounterTypId = "8";
-          encounterObs.formId = "34";
-          ob.encounter_id = 0;
-        }
-
-        ob.concept_id = mappedEmrConcept[0];
         encounterObs.obs = ob;
       }
-    } else {
-      await this.insertMissingConcepts(ob.concept_id, "unMapped", con);
-      console.log("Unmapped", ob);
+      return encounterObs;
     }
-    return encounterObs;
   }
   async insertMissingConcepts(
     ob: number,
     conceptType: string,
     con: Connection
   ) {
-   //(ob, conceptType, con);
+    //(ob, conceptType, con);
   }
 }
+export async function exportDrugs(
+  amrsPatientId: any,
+  etlCon: Connection,
+  emrPatientId: any,
+  emrCon: Connection,
+  insertmap: InsertedMap
+) {
+  const latestSummaries: any = await LoadCurrentHivSummary(
+    amrsPatientId,
+    etlCon
+  );
+  //Create initial regimen payload
+  console.log(latestSummaries);
+  const userMap = UserMapper.instance.userMap;
+  let initialDrugRegimenEncounter: Encounter = {
+    encounter_datetime: latestSummaries.arv_first_regimen_start_date,
+    creator: 1,
+    changed_by: 1,
+    voided_by: 1,
+    encounter_type: 29,
+    form_id: 49,
+    location_id: 1604,
+    patient_id: emrPatientId,
+    visit_id: null,
+    uuid: uuidv4(),
+    encounter_id: 0,
+    date_created: latestSummaries.date_created,
+    voided: 0,
+    void_reason: "",
+    date_changed: undefined,
+  };
+  // console.log(initialDrugRegimenEncounter)
+  let initialRegimenEnc = await createDrugRegimenEncounter(
+    {},
+    initialDrugRegimenEncounter,
+    emrCon
+  );
+  console.log(initialRegimenEnc.insertId);
+  let initialObs = await generateDrugObs(
+    latestSummaries.arv_first_regimen,
+    1256,
+    latestSummaries.prev_arv_line,
+    latestSummaries.date_created,
+    initialRegimenEnc.insertId,
+    1604,
+    "",
+    "",
+    emrPatientId,
+    emrCon
+  );
+  await savePatientObs(
+    initialObs,
+    insertmap,
+    emrCon,
+    initialRegimenEnc.insertId
+  );
+  //Createe previous arv regimen payload
+
+  let prevArvEncounter: Encounter = {
+    encounter_datetime: latestSummaries.prev_arv_start_date,
+    creator: 1,
+    changed_by: 1,
+    voided_by: 1,
+    encounter_type: 29,
+    form_id: 49,
+    location_id: 1604,
+    patient_id: emrPatientId,
+    visit_id: null,
+    uuid: uuidv4(),
+    encounter_id: 0,
+    date_created: latestSummaries.date_created,
+    voided: 0,
+    date_voided: undefined,
+    void_reason: "",
+    date_changed: undefined,
+  };
+  let prevRegimenEnc = await createDrugRegimenEncounter(
+    {},
+    prevArvEncounter,
+    emrCon
+  );
+
+  let prevObs = await generateDrugObs(
+    latestSummaries.prev_arv_meds,
+    1257,
+    latestSummaries.prev_arv_line,
+    latestSummaries.date_created,
+    prevRegimenEnc.insertId,
+    1604,
+    latestSummaries.prev_arv_start_date,
+    initialRegimenEnc.insertId,
+    emrPatientId,
+    emrCon
+  );
+  await savePatientObs(prevObs, insertmap, emrCon, prevRegimenEnc.insertId);
+  //Createe previous arv regimen payload
+  let currArvEncounter: Encounter = {
+    encounter_datetime: latestSummaries.arv_start_date,
+    creator: 1,
+    changed_by: 1,
+    voided_by: 1,
+    encounter_type: 29,
+    form_id: 49,
+    location_id: 1604,
+    patient_id: emrPatientId,
+    visit_id: null,
+    uuid: uuidv4(),
+    encounter_id: 0,
+    date_created: latestSummaries.date_created,
+    voided: 0,
+    date_voided: undefined,
+    void_reason: "",
+    date_changed: undefined,
+  };
+  let currRegimenEnc = await createDrugRegimenEncounter(
+    {},
+    currArvEncounter,
+    emrCon
+  );
+
+  let currObs = await generateDrugObs(
+    latestSummaries.cur_arv_meds,
+    1257,
+    latestSummaries.cur_arv_line,
+    latestSummaries.date_created,
+    currRegimenEnc.insertId,
+    1604,
+    latestSummaries.arv_start_date,
+    prevRegimenEnc.insertId,
+    emrPatientId,
+    emrCon
+  );
+  await savePatientObs(currObs, insertmap, emrCon, currRegimenEnc.insertId);
+}
+export async function generateDrugObs(
+  regimen: any,
+  artPlan: any,
+  line: any,
+  date_created: any,
+  encounterId: any,
+  location_id: any,
+  previousDate: any,
+  previousEncounter: any,
+  personId: any,
+  emrCon: Connection
+) {
+  let obs: Obs[] = [];
+  let d = ConceptMapper.instance;
+  let plan: Obs = {
+    person_id: personId,
+    concept_id: 1255,
+    encounter_id: encounterId,
+    order_id: 0,
+    obs_datetime: date_created,
+    location_id: location_id,
+    accession_number: "",
+    value_group_id: 0,
+    value_boolean: 0,
+    value_coded: artPlan,
+    value_coded_name_id: 0,
+    value_drug: undefined,
+    value_datetime: undefined,
+    value_numeric: null,
+    value_modifier: "",
+    value_text: "",
+    value_complex: "",
+    comments: "",
+    creator: 1,
+    date_created: date_created,
+    voided: 0,
+    voided_by: null,
+    void_reason: "",
+    uuid: uuidv4(),
+    form_namespace_and_path: 0,
+    previous_version: "",
+    status: "",
+    interpretation: 0,
+    obs_id: 0,
+    amrs_obs_id: 0,
+  };
+  obs.push(plan);
+  // Create regimen
+  let rawRegimenArray = regimen.split(" ## ");
+  for (let index = 0; index < rawRegimenArray.length; index++) {
+    const element = rawRegimenArray[index];
+    const mapped = d.amrsConceptMap[element];
+    obs.push({
+      person_id: personId,
+      concept_id: 1088,
+      encounter_id: encounterId,
+      order_id: 0,
+      obs_datetime: date_created,
+      location_id: location_id,
+      accession_number: "",
+      value_group_id: 0,
+      value_boolean: 0,
+      value_coded: element === "unknown" ? 1067 : mapped,
+      value_coded_name_id: 0,
+      value_drug: undefined,
+      value_datetime: undefined,
+      value_numeric: null,
+      value_modifier: "",
+      value_text: "",
+      value_complex: "",
+      comments: "",
+      creator: 1,
+      date_created: date_created,
+      voided: 0,
+      voided_by: null,
+      void_reason: "",
+      uuid: uuidv4(),
+      form_namespace_and_path: 0,
+      previous_version: "",
+      status: "",
+      interpretation: 0,
+      obs_id: 0,
+      amrs_obs_id: 0,
+    });
+  }
+  //Push line
+  let artLine = "";
+
+  switch (line) {
+    case 3:
+      artLine = "AT";
+      break;
+    case 2:
+      artLine = "AS";
+      break;
+    case 1:
+      artLine = "AF";
+      break;
+
+    default:
+      break;
+  }
+  console.log("line", artLine, line);
+  obs.push({
+    person_id: personId,
+    concept_id: 6744,
+    encounter_id: encounterId,
+    order_id: 0,
+    obs_datetime: date_created,
+    location_id: location_id,
+    accession_number: "",
+    value_group_id: 0,
+    value_boolean: 0,
+    value_coded: null,
+    value_coded_name_id: 0,
+    value_drug: undefined,
+    value_datetime: undefined,
+    value_numeric: null,
+    value_modifier: "",
+    value_text: artLine,
+    value_complex: "",
+    comments: "",
+    creator: 1,
+    date_created: date_created,
+    voided: 0,
+    voided_by: null,
+    void_reason: "",
+    uuid: uuidv4(),
+    form_namespace_and_path: 0,
+    previous_version: "",
+    status: "",
+    interpretation: 0,
+    obs_id: 0,
+    amrs_obs_id: 0,
+  });
+  //push end dates for previous regimens only
+  if (previousEncounter !== "") {
+    let sql = toInsertSql(
+      {
+        person_id: personId,
+        concept_id: 1191,
+        encounter_id: previousEncounter,
+        order_id: 0,
+        obs_datetime: date_created,
+        location_id: location_id,
+        accession_number: "",
+        value_group_id: 0,
+        value_boolean: 0,
+        value_coded: null,
+        value_coded_name_id: 0,
+        value_drug: undefined,
+        value_datetime: previousDate,
+        value_numeric: null,
+        value_modifier: "",
+        value_text: "",
+        value_complex: "",
+        comments: "",
+        creator: 1,
+        date_created: date_created,
+        voided: 0,
+        voided_by: null,
+        void_reason: "",
+        uuid: uuidv4(),
+        form_namespace_and_path: 0,
+        previous_version: "",
+        status: "",
+        interpretation: 0,
+        obs_id: 0,
+        amrs_obs_id: 0,
+      },
+      [
+        "amrs_obs_id",
+        "value_boolean",
+        "status",
+        "interpretation",
+        "obs_id",
+        "order_id",
+        "obs_group_id",
+        "previous_version",
+        "value_coded_name_id",
+      ],
+      "obs",
+      {}
+    );
+    await CM.query(sql, emrCon);
+  }
+
+  return obs;
+}
+//Creeate current arv regimen payload
 export async function createDrugRegimenEncounter(
   replaceColumns: any,
   encounter: Encounter,
@@ -249,7 +475,6 @@ export async function createDrugRegimenEncounter(
     toEncounterInsertStatement(encounter, replaceColumns),
     con
   );
-  console.log(savedEncounter);
   return savedEncounter;
 }
 export function toEncounterInsertStatement(
@@ -258,10 +483,28 @@ export function toEncounterInsertStatement(
 ) {
   return toInsertSql(
     encounter,
-    ["encounter_id", "visit_id", "value_drug"],
+    ["encounter_id", "visit_id"],
     "encounter",
     replaceColumns
   );
+}
+export async function cleanUpRegimenEditorEvents(
+  patient: any,
+  connection: Connection
+) {
+  console.log("cleanup", patient);
+  let loadRegimenEditorEncounters = await fetchRegimenEncountersObs(
+    patient,
+    connection
+  );
+  await cleanRegimenEncountersObs(patient, connection);
+  let obsRetaindelete: any = [];
+  await loadRegimenEditorEncounters.forEach(async (element) => {
+    let sql = toInsertSql(element, [], "obs", "");
+    const results = await CM.query(sql, connection);
+    console.log("regrouped obs", results);
+    obsRetaindelete.push(element.obs_id);
+  });
 }
 function uuidv4() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {

@@ -2,11 +2,12 @@ import ConnectionManager from "../connection-manager";
 import UserMapper from "../users/user-map";
 import ConceptMapper, { AmrsConceptMap } from "../concept-map";
 import { Connection } from "mysql";
-import { Order } from "../tables.types";
+import { Encounter, Order } from "../tables.types";
 import { PatientData } from "../patients/patient-data";
 import toInsertSql from "../prepare-insert-sql";
 import { InsertedMap } from "../inserted-map";
 import ProviderMapper from "../providers/provider-map";
+import { getEncounterIDByUUID, getEncounterUUIDByID } from "./load-orders";
 
 const CM = ConnectionManager.getInstance();
 
@@ -14,7 +15,8 @@ export default async function savePatientOrders(
   ordersToInsert: Order[],
   patient: PatientData,
   insertMap: InsertedMap,
-  connection: Connection
+  connection: Connection,
+  amrsconnection: Connection
 ) {
   await ConceptMapper.instance.initialize();
   await UserMapper.instance.initialize();
@@ -27,7 +29,8 @@ export default async function savePatientOrders(
     insertMap.patient,
     insertMap.encounters,
     ProviderMapper.instance.providerMap,
-    connection
+    connection,
+    amrsconnection
   );
   insertMap.orders = map;
 }
@@ -42,7 +45,8 @@ export async function saveOrder(
   newPatientId: number,
   encounterMap: any,
   providerMap: any,
-  connection: Connection
+  connection: Connection,
+  amrcon: Connection
 ) {
   let orderMap: OrderMap = {};
   let skippedOrderCount = 0;
@@ -57,13 +61,15 @@ export async function saveOrder(
       skippedOrderCount++;
       continue;
     }
-    const sql = toOrdersInsertStatement(
+    const sql = await toOrdersInsertStatement(
       mappedOrders[i],
       sourceOrders[i],
       newPatientId,
       UserMapper.instance.userMap,
       encounterMap,
-      providerMap
+      providerMap,
+      amrcon,
+      connection
     );
     // console.log('sql', sql);
     const results = await CM.query(sql, connection); // TODO save once encounters are ready
@@ -76,27 +82,49 @@ export async function saveOrder(
   return orderMap;
 }
 
-export function toOrdersInsertStatement(
+export async function toOrdersInsertStatement(
   order: Order,
   sourceOrder: Order,
   newPatientId: number,
   userMap: any,
   encounterMap: any,
-  providerMap: any
+  providerMap: any,
+  amrcon: Connection,
+  emrcon: Connection
 ) {
   console.log("orders", encounterMap, sourceOrder);
   let replaceColumns = {
-    creator: userMap[sourceOrder.creator],
-    voided_by: userMap[sourceOrder.voided_by],
-    orderer: providerMap[sourceOrder.orderer],
+    creator: 1,
+    voided_by: 1,
+    orderer: 1,
     // order_reason: conceptMap[sourceOrder.order_reason],
     patient_id: newPatientId,
-    encounter_id: encounterMap[sourceOrder.encounter_id] || null,
+    encounter_id: await getEncounterID(
+      sourceOrder.encounter_id,
+      amrcon,
+      emrcon
+    ),
     previous_order_id: null, //TODO replace with previous_version
   };
   return toInsertSql(order, ["order_id"], "orders", replaceColumns);
 }
+export async function getEncounterID(
+  id: any,
+  amrcon: Connection,
+  emrcon: Connection
+) {
+  //get encounter uuid by id from amrs
 
+  let amrsencounter: Encounter = await getEncounterUUIDByID(id, amrcon);
+  console.log("ola ola", amrsencounter, id);
+  //get encounter id using uuid
+  let emrEncounter: Encounter = await getEncounterIDByUUID(
+    amrsencounter.uuid,
+    emrcon
+  );
+  console.log("emrEncounter", emrEncounter);
+  return emrEncounter.encounter_id;
+}
 export function prepareOrders(
   ordersToInsert: Order[],
   conceptMap: ConceptMapper

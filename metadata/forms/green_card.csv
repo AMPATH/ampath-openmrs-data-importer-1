@@ -714,4 +714,8 @@ obsgroup id- 121689,,,,,
 1088,TDF-3TC-ATV/r,164512,164512,10800,164512
 164855,TDF-3TC-ATV/r,164512,164512,10800,164512
 164855,Initial ART regimen,164855,164855,10804,164855
-164932,Transit ,164931,164931,10794,
+164932,Transit ,164931,164931,10794,164931
+166073,Current HIV antiretroviral drug use treatment category,166073,Current HIV antiretroviral drug use treatment category,6744,6744
+166073,Third line hiv antiretroviral drug treatment ,166076,-,6695,6695
+166073,First line hiv antiretroviral drug treatment ,166074,-,6693,6693
+166073,Second line hiv antiretroviral drug treatment,166075,Second line hiv antiretroviral drug treatment,6694,6694

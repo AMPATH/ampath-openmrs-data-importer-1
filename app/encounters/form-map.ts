@@ -35,7 +35,7 @@ export default class FormMapper {
       }
     }
 
-    console.log("Form Map", this._formMap);
+    //console.log("Form Map", this._formMap);
   }
 
   get formMap(): ProviderMap {
