@@ -97,7 +97,17 @@ export async function LoadCurrentHivSummary(
   patientId: any,
   connection: Connection
 ) {
-  const sql = `SELECT * FROM etl.flat_hiv_summary_v15b a WHERE a.person_id = ${patientId} AND a.encounter_type IN (2) and a.prev_arv_meds != a.cur_arv_meds ORDER BY encounter_datetime DESC limit 1;`;
+  const sql = `SELECT * FROM etl.flat_hiv_summary_v15b a WHERE a.person_id = ${patientId} AND a.encounter_type IN (1,2,4,3,105,106) and a.prev_arv_meds != a.cur_arv_meds and a.prev_arv_start_date is not null ORDER BY a.visit_num DESC limit 1;`;
   let results: any = await CM.query(sql, connection);
+  console.log("Hiv summary", results);
+  return results[0];
+}
+export async function LoadSingleHivSummary(
+  patientId: any,
+  connection: Connection
+) {
+  const sql = `SELECT * FROM etl.flat_hiv_summary_v15b a WHERE a.person_id = ${patientId} AND a.encounter_type IN (1,2,4,3,105,106) and a.prev_arv_meds is not null and a.cur_arv_meds is not null ORDER BY a.visit_num DESC limit 1;`;
+  let results: any = await CM.query(sql, connection);
+  console.log("Single Hiv summary", results);
   return results[0];
 }

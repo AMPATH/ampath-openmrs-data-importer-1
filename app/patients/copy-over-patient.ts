@@ -34,8 +34,9 @@ export default async function transferPatientToAmrs(personId: number) {
 
       await savePatientData(patient, emrcon);
       saved = await loadPatientDataByUuid(patient.person.uuid, emrcon);
-
-      await savePatient(patient, saved.person.person_id, emrcon);
+      if (patient.patient) {
+        await savePatient(patient, saved.person.person_id, emrcon);
+      }
       let insertMap: InsertedMap = {
         patient: saved.person.person_id,
         visits: {},
